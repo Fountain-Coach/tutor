@@ -1,10 +1,23 @@
 # FountainAI Tutorial Series
 
-This repository accompanies the [FountainAI Comprehensive Tutorial Series (Beginner to Expert)](./FountainAI%20Comprehensive%20Tutorial%20Series%20(Beginner%20to%20Expert).pdf). The guides follow a template-first approach that scaffolds each project so you can focus on customizing the core FountainAI stack.
+This repository accompanies the [FountainAI Comprehensive Tutorial Series (Beginner to Expert)](./FountainAI%20Comprehensive%20Tutorial%20Series%20(Beginner%20to%20Expert).pdf). Each tutorial includes a `setup.sh` script that pulls the [FountainAI template](https://github.com/Fountain-Coach/the-fountainai) and produces a runnable SwiftUI app. The guides follow a template-first approach so you can focus on customizing the core FountainAI stack.
 
-## Template-First Development
+## Tutorial Workflow
 
-Start each tutorial from a generated template and then tailor it to your needs. This workflow encourages rapid iteration while reusing a consistent stack and enabling AI-assisted code generation.
+1. Clone this repository.
+2. Choose a tutorial and change into its directory.
+3. Run `./setup.sh` to fetch the latest template from the-fountainai.
+4. Build and launch the app with `swift build` and `swift run`.
+
+## What You CAN Do
+
+- Run `tutorials/<name>/setup.sh` to scaffold a tutorial project.
+- Compile the generated app with `swift build`.
+- Launch the app from the command line using `swift run`.
+
+## Limitations
+
+- GUI tests and other macOS-only features require running on macOS.
 
 ## Prerequisites
 
