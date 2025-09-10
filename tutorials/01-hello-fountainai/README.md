@@ -42,6 +42,13 @@ Run the provided setup script, which pulls in the FountainAI app-creation templa
 ./setup.sh
 ```
 
+The script clones the template repository into a temporary folder and runs its
+`new-gui-app` helper to scaffold the **HelloFountainAI** target. It then copies
+the generated `main.swift` and `Package.swift` into this tutorial directory and
+prints status messages such as where the files were written. By default it runs
+non‑interactively, so no prompts appear unless you pass a custom bundle
+identifier as an argument.
+
 ## 3. Build and run
 Build the project and launch it locally:
 
