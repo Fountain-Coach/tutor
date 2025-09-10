@@ -66,3 +66,12 @@ Build the project and launch it locally:
 swift build
 swift run
 ```
+
+When the app starts successfully, the console prints a friendly greeting:
+
+```text
+$ swift run
+Building for debugging...
+Build complete! (0.1s)
+Hello, FountainAI!
+```
