@@ -10,8 +10,7 @@ This is a **documentation and tutorials repository** for the FountainAI ecosyste
 ## Working Effectively
 
 ### Prerequisites and Environment Setup
-- Swift 6.1+ is already installed and available at `/usr/local/bin/swift`
-- Swift Package Manager is included with Swift toolchain
+- Swift toolchain and Swift Package Manager are available in the PATH; verify with `swift --version`
 - macOS 14+ is referenced in docs but Linux environment works for basic Swift operations
 - No additional SDK downloads required for basic Swift development
 
