@@ -2,12 +2,13 @@
 
 This repository accompanies the [FountainAI Comprehensive Tutorial Series (Beginner to Expert)](./FountainAI%20Comprehensive%20Tutorial%20Series%20(Beginner%20to%20Expert).pdf). Each tutorial includes a `setup.sh` script that pulls the [FountainAI template](https://github.com/Fountain-Coach/the-fountainai) and produces a runnable SwiftUI app. The guides follow a template-first approach so you can focus on customizing the core FountainAI stack.
 
-## Tutorial Workflow
+## Getting Started
 
-1. Clone this repository.
-2. Choose a tutorial and change into its directory.
-3. Run `./setup.sh` to fetch the latest template from the-fountainai.
-4. Build and launch the app with `swift build` and `swift run`.
+1. `git clone` this repository.
+2. `cd tutorials/01-hello-fountainai && ./setup.sh`
+3. `swift build` and `swift run`
+
+The `setup.sh` script pulls the app template from [the-fountainai](https://github.com/Fountain-Coach/the-fountainai) and prepares the Swift package automatically.
 
 ## What You CAN Do
 
@@ -21,9 +22,9 @@ This repository accompanies the [FountainAI Comprehensive Tutorial Series (Begin
 
 ## Prerequisites
 
-- macOS 14+ with Swift 6.1+
+- Swift 6.1+ toolchain (macOS 14+ recommended)
+- `OPENAI_API_KEY` environment variable for AI features
 - Basic familiarity with Swift and SwiftUI
-- Optional: OpenAI API key for AI features
 
 ## Tutorials
 
