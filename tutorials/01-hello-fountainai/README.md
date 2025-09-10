@@ -5,6 +5,27 @@ In this first lesson you will scaffold a tiny "Hello FountainAI" application
 from the template repository. By the end you'll know how to verify your Swift
 toolchain, generate the starter project, and compile and launch it locally.
 
+## Prerequisites
+
+To follow this tutorial you'll need:
+
+- **Swift 6.1+** – verify it is available:
+  ```bash
+  swift --version
+  ```
+- **Git 2.40+** – check with:
+  ```bash
+  git --version
+  ```
+- **OpenAI API key** (optional but enables AI features):
+  ```bash
+  export OPENAI_API_KEY="sk-..."
+  ```
+- Make sure the setup script can run:
+  ```bash
+  chmod +x setup.sh
+  ```
+
 Follow these steps to spin up a minimal FountainAI app.
 
 ## 1. Check your environment
