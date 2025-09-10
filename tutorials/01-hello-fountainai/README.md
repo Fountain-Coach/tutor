@@ -34,6 +34,8 @@ To follow this tutorial you'll need:
   chmod +x setup.sh
   ```
 
+On macOS you may need to install the Xcode command line tools with `xcode-select --install`. Linux users should install a Swift 6.1 toolchain along with required system libraries such as `clang` and `libicu`. SwiftUI features from the template currently work only on macOS, so the generated code runs as a command-line app on Linux.
+
 Follow these steps to spin up a minimal FountainAI app.
 
 ## Repository layout
