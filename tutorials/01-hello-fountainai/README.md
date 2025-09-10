@@ -75,6 +75,25 @@ Building for debugging...
 Build complete! (0.1s)
 Hello, FountainAI!
 ```
+## Exercise: Customize the greeting
+
+Try editing the generated `main.swift` to see how code changes affect the running program:
+
+1. Open `main.swift` and find the line:
+   ```swift
+   print("Hello, FountainAI!")
+   ```
+2. Change the message to something unique, for example:
+   ```swift
+   print("Hello from my first FountainAI app!")
+   ```
+3. Rebuild and run the project:
+   ```bash
+   swift build
+   swift run
+   ```
+The console now displays your custom greeting, demonstrating the edit-build-run cycle.
+
 ## Troubleshooting
 
 If you run into problems, these tips may help:
