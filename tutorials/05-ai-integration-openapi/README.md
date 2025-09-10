@@ -2,14 +2,21 @@
 
 Learn how to call FountainAI services from any HTTP client by using its OpenAPI endpoints.
 
-## 1. Get API access
+## 1. Scaffold the project
+Run the setup script, which uses the FountainAI app-creation template from the [the-fountainai](https://github.com/Fountain-Coach/the-fountainai) repo:
+
+```bash
+./setup.sh
+```
+
+## 2. Get API access
 Create an account and generate an API key, then expose it to your environment:
 
 ```bash
 export FOUNTAIN_AI_KEY="sk-your-key"
 ```
 
-## 2. Invoke an AI endpoint
+## 3. Invoke an AI endpoint
 Send a POST request to the `/v1/generate` path with the desired model and prompt.
 
 ### cURL example
@@ -48,6 +55,14 @@ let task = URLSession.shared.dataTask(with: request) { data, _, _ in
     }
 }
 task.resume()
+```
+
+## Build and run
+Compile and run the package:
+
+```bash
+swift build
+swift run
 ```
 
 ## Next steps

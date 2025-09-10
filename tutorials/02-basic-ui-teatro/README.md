@@ -3,10 +3,10 @@
 This guide shows how to modify the scaffolded user interface using FountainAI's Teatro domain-specific language (DSL).
 
 ## 1. Scaffold the project
-Generate a GUI app template:
+Run the setup script, which pulls in the FountainAI app-creation template from the [the-fountainai](https://github.com/Fountain-Coach/the-fountainai) repo:
 
 ```bash
-Scripts/new-gui-app.sh BasicTeatro
+./setup.sh
 ```
 
 The script creates a starter project with a `MainScene.teatro` file that declares the UI.
@@ -38,11 +38,6 @@ When you press the button, the handler runs and prints to the console.
 Compile the project and launch the generated SwiftUI app:
 
 ```bash
-Scripts/build-local.sh
-scripts/start-local.sh BasicTeatro
+swift build
+swift run
 ```
-
-## Script references
-- [new-gui-app.sh](https://github.com/Fountain-Coach/the-fountainai/blob/main/Scripts/new-gui-app.sh)
-- [build-local.sh](https://github.com/Fountain-Coach/the-fountainai/blob/main/Scripts/build-local.sh)
-- [start-local.sh](https://github.com/Fountain-Coach/the-fountainai/blob/main/scripts/start-local.sh)
