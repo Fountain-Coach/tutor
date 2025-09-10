@@ -2,6 +2,13 @@
 
 This tutorial shows how to play audio and keep your user interface synchronized with MIDI 2.0 data.
 
+## Scaffold the project
+Run the setup script, which uses the FountainAI app-creation template from the [the-fountainai](https://github.com/Fountain-Coach/the-fountainai) repo:
+
+```bash
+./setup.sh
+```
+
 ## Playing Audio
 
 Load a MIDI file and route it into an `AudioContext`. The player will handle decoding and playback once `play()` is called:
@@ -46,3 +53,11 @@ Hook simple controls into the player with standard DOM events:
 ```
 
 These snippets demonstrate how audio playback and UI synchronization can be achieved using MIDI 2.0.
+
+## Build and run
+Compile and launch the project:
+
+```bash
+swift build
+swift run
+```
