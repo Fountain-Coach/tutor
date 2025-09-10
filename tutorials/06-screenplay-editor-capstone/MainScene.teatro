@@ -1,0 +1,12 @@
+Stage {
+  Scene {
+    Text("Screenplay Editor")
+    Button("Play Cue") { emit("play-cue") }
+    Button("Save Note") { emit("save-note") }
+    Button("Ask AI") { emit("ask-ai") }
+  }
+}
+
+on("play-cue") { /* handled in CuePlayer.ts */ }
+on("save-note") { /* handled in NoteStore.swift */ }
+on("ask-ai")  { /* handled in AIClient.swift */ }
