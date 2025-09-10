@@ -5,6 +5,14 @@ In this first lesson you will scaffold a tiny "Hello FountainAI" application
 from the template repository. By the end you'll know how to verify your Swift
 toolchain, generate the starter project, and compile and launch it locally.
 
+## Learning outcomes
+
+By completing this tutorial, you will:
+
+- Confirm that Swift and Git are installed and ready to use
+- Scaffold a Hello FountainAI app from the official template
+- Build and run the app locally, then customize its greeting
+
 ## Prerequisites
 
 To follow this tutorial you'll need:
