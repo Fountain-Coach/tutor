@@ -33,11 +33,7 @@ This is a **documentation and tutorials repository** for the FountainAI ecosyste
 - Run GUI applications (would require macOS environment)
 
 ### External Dependencies and Limitations
-- **Main FountainAI Repository**: `https://github.com/Fountain-Coach/the-fountainai.git`
-  - Contains the actual scaffolding scripts and buildable components
-  - **LIMITATION**: Currently has URLSession compatibility issues on Linux
-  - **BUILD FAILURE**: `swift build` fails with "type 'URLSession' has no member 'shared'" error
-  - **TIMEOUT WARNING**: If attempting builds, expect 10+ minutes before failure. NEVER CANCEL during dependency resolution.
+External FountainAI repositories may fail to build on Linux; check upstream issues for the latest status.
 
 ### Repository Structure
 
