@@ -1,5 +1,10 @@
 # 01 – Hello FountainAI
 
+FountainAI is a theatre-themed Swift framework for crafting AI‑powered apps.
+In this first lesson you will scaffold a tiny "Hello FountainAI" application
+from the template repository. By the end you'll know how to verify your Swift
+toolchain, generate the starter project, and compile and launch it locally.
+
 Follow these steps to spin up a minimal FountainAI app.
 
 ## 1. Check your environment
