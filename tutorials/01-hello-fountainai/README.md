@@ -106,3 +106,10 @@ If `./setup.sh` fails to clone the template repository, verify your internet con
 
 ### Permission denied on setup script
 If the setup script isn't executable, run `chmod +x setup.sh` and try again.
+
+## Next steps
+
+Continue exploring FountainAI with these resources:
+
+- [Official FountainAI documentation](https://github.com/Fountain-Coach/the-fountainai)
+- [Next tutorial: 02 – Basic UI with Teatro](../02-basic-ui-teatro/README.md)
