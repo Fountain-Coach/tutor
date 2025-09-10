@@ -40,14 +40,10 @@ This is a **documentation and tutorials repository** for the FountainAI ecosyste
   - **TIMEOUT WARNING**: If attempting builds, expect 10+ minutes before failure. NEVER CANCEL during dependency resolution.
 
 ### Repository Structure
-```
-.
-├── README.md                    # Main documentation and workflow instructions  
-├── Building-A-Mac-Screenplay-Editor/
-│   └── Building a macOS...pdf   # Comprehensive PDF tutorial
-├── .gitignore                   # Standard Swift/macOS ignores
-└── LICENSE                      # MIT License
-```
+
+Tutorial content lives under the `tutorials/` directory.
+PDF resources, such as comprehensive guides, reside at the repository root.
+Run `ls` or `find` to discover current tutorials.
 
 ## Validation and Testing
 
