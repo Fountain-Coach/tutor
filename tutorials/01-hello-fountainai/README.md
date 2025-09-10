@@ -75,3 +75,15 @@ Building for debugging...
 Build complete! (0.1s)
 Hello, FountainAI!
 ```
+## Troubleshooting
+
+If you run into problems, these tips may help:
+
+### Swift toolchain missing
+If `swift --version` or `swift build` reports `swift: command not found`, install Swift 6.1+ and ensure the `swift` binary is in your `PATH`.
+
+### Network or Git failures
+If `./setup.sh` fails to clone the template repository, verify your internet connection and that Git can reach GitHub. Retry once connectivity is restored.
+
+### Permission denied on setup script
+If the setup script isn't executable, run `chmod +x setup.sh` and try again.
