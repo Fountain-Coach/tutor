@@ -16,11 +16,12 @@ This is a **documentation and tutorials repository** for the FountainAI ecosyste
 
 ### What You CAN Do in This Repository
 - Read and edit documentation files (README.md, tutorials)
-- Create and test basic Swift packages for experimentation: 
+- Create and test basic Swift packages for experimentation:
+  Allow commands to finish; dependency fetching may take several minutes.
   ```bash
   swift package init --type=executable --name TestProject
-  swift build  # Takes 2 seconds. NEVER CANCEL.
-  swift run    # Takes 1 second. NEVER CANCEL.
+  swift build
+  swift run
   ```
 - Edit and validate Markdown documentation
 - Test Swift syntax and basic functionality
@@ -48,14 +49,16 @@ Run `ls` or `find` to discover current tutorials.
 
 ### Basic Swift Validation (Always Works)
 Test basic Swift functionality with these validated commands:
+Allow commands to finish; dependency fetching may take several minutes.
+
 ```bash
-# Create test package (1 second)
+# Create test package
 swift package init --type=executable --name ValidationTest
 
-# Build test package (2 seconds, NEVER CANCEL)
+# Build test package
 swift build
 
-# Run test package (1 second)  
+# Run test package
 swift run
 
 # Clean up
