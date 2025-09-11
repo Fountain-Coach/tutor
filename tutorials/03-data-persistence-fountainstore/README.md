@@ -86,3 +86,6 @@ Add tests for save/load helpers and edge cases (empty file, corrupt JSON) as you
 
 ## Next steps
 Proceed to [04 – Multimedia with MIDI2](../04-multimedia-midi2/README.md) to integrate audio playback and timing updates.
+
+## See also
+- [Deep dive: Dependency management with SwiftPM and profiles](../../docs/dependency-management-deep-dive.md)

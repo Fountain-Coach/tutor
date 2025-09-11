@@ -65,3 +65,6 @@ Add tests for persistence helpers, cue timing calculations, and any model-format
 
 ## Next steps
 Explore deeper integration in the upstream monorepo (Gateway plugins, persistence services) or extend the editor with scenes, formatting, and export.
+
+## See also
+- [Deep dive: Dependency management with SwiftPM and profiles](../../docs/dependency-management-deep-dive.md)

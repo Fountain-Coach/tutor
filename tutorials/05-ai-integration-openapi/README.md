@@ -88,3 +88,6 @@ Add tests that validate your request-building logic (headers, JSON encoding) and
 
 ## Next steps
 Use the responses in your app to drive features like summarization, dialogue, or content generation.
+
+## See also
+- [Deep dive: Dependency management with SwiftPM and profiles](../../docs/dependency-management-deep-dive.md)

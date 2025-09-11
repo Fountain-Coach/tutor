@@ -158,3 +158,4 @@ Continue exploring FountainAI with these resources:
 
 - [Official FountainAI documentation](https://github.com/Fountain-Coach/the-fountainai)
 - [Next tutorial: 02 – Basic UI with Teatro](../02-basic-ui-teatro/README.md)
+- [Deep dive: Dependency management with SwiftPM and profiles](../../docs/dependency-management-deep-dive.md)

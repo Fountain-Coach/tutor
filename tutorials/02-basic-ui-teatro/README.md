@@ -72,3 +72,6 @@ Tip (macOS app bundle): If you’re working inside the FountainAI monorepo, you 
 
 ## Next steps
 Continue to [03 – Data Persistence with FountainStore](../03-data-persistence-fountainstore/README.md) to save and load data from disk.
+
+## See also
+- [Deep dive: Dependency management with SwiftPM and profiles](../../docs/dependency-management-deep-dive.md)

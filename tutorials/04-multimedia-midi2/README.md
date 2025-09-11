@@ -88,3 +88,6 @@ Keep Swift tests focused on any local helpers; test TS code with your chosen run
 
 ## Next steps
 Proceed to [05 – AI Integration with OpenAPI](../05-ai-integration-openapi/README.md) to call AI endpoints.
+
+## See also
+- [Deep dive: Dependency management with SwiftPM and profiles](../../docs/dependency-management-deep-dive.md)

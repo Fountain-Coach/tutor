@@ -4,6 +4,7 @@
 - Root contains `README.md`, `LICENSE`, and reference PDFs. All tutorial content lives in `tutorials/`.
 - Tutorials use numbered, kebab-case folders: `tutorials/NN-title/` (e.g., `06-screenplay-editor-capstone/`).
 - Each tutorial includes a `README.md` plus sample code and assets (e.g., `MainScene.teatro`, `NoteStore.swift`, `CuePlayer.ts`, MIDI files).
+- Deep knowledge articles live in `docs/` (e.g., `docs/dependency-management-deep-dive.md`). Link them from READMEs when relevant.
 
 ## Build, Test, and Development Commands
 - Per tutorial folder:

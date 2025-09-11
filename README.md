@@ -12,6 +12,8 @@ This repository hosts the tutorial content for FountainAI. Each lesson scaffolds
 - App tooling in `Scripts/`: `new-gui-app.sh <Name>` scaffolds `apps/<Name>`; `make_app.sh <Name>` bundles a `.app` on macOS.
 - These tutorials copy the generated `main.swift` and `Package.swift` locally for a minimal SPM experience.
 
+Deep knowledge: See docs/dependency-management-deep-dive.md for how profiles map to modules, how SwiftPM resolves dependencies, and pinning/versioning guidance.
+
 ## Getting Started
 
 1. Clone this repo.
