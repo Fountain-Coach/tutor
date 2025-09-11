@@ -92,13 +92,14 @@ generate_local() {
         TARGET_DEPS+=(".product(name: \"SemanticBrowserAPI\", package: \"the-fountainai\")")
         ;;
     esac
-    # Join without leading comma
+    # Join without leading comma, with real newlines (no escape sequences)
     DEPS_JOINED=""
     for dep in "${TARGET_DEPS[@]}"; do
       if [[ -z "$DEPS_JOINED" ]]; then
         DEPS_JOINED="$dep"
       else
-        DEPS_JOINED="$DEPS_JOINED,\n                $dep"
+        DEPS_JOINED="$DEPS_JOINED,
+                $dep"
       fi
     done
 

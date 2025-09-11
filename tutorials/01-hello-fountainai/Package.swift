@@ -4,21 +4,20 @@ import PackageDescription
 let package = Package(
     name: "HelloFountainAI",
     platforms: [ .macOS(.v14) ],
-    dependencies: [
-        .package(url: "https://github.com/Fountain-Coach/the-fountainai.git", branch: "main")
-    ],
     products: [
         .executable(name: "HelloFountainAI", targets: ["HelloFountainAI"])
+    ],
+    dependencies: [
+        .package(url: "https://github.com/Fountain-Coach/the-fountainai.git", branch: "main")
     ],
     targets: [
         .executableTarget(
             name: "HelloFountainAI",
-            path: ".",
-            sources: ["main.swift", "Greeter.swift"],
-            dependencies: [,
-                .product(name: "FountainAIAdapters", package: "the-fountainai"),
+            dependencies: [.product(name: "FountainAIAdapters", package: "the-fountainai"),
                 .product(name: "FountainAICore", package: "the-fountainai"),
-                .product(name: "LLMGatewayAPI", package: "the-fountainai")]
+                .product(name: "LLMGatewayAPI", package: "the-fountainai")],
+            path: ".",
+            sources: ["main.swift", "Greeter.swift"]
         ),
         .testTarget(
             name: "HelloFountainAITests",

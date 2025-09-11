@@ -8,12 +8,8 @@ struct AppEntry: App {
     @State private var settings = AppSettings()
     @State private var vm: AskViewModel? = nil
     @State private var settingsStore = DefaultSettingsStore(keychain: KeychainDefault())
-    @State private var errorMessage: String? = nil
     var body: some Scene {
-        WindowGroup {
-            MainView(vm: vm, onAsk: ask)
-                .onAppear { configure() }
-        }
+        WindowGroup { MainView(vm: vm, onAsk: ask).onAppear { configure() } }
     }
     private func makeLLM() -> LLMService {
         let token: String? = (try? settingsStore.getSecret(for: settings.apiKeyRef ?? "")).flatMap { String(data: $0, encoding: .utf8) }
@@ -26,16 +22,11 @@ struct AppEntry: App {
             return LLMGatewayAdapter(client: client)
         }
     }
-    private func configure() {
-        do { settings = try settingsStore.load() } catch { }
-        let llm = makeLLM()
-        vm = AskViewModel(llm: llm, browser: MockBrowserService())
-    }
+    private func configure() { do { settings = try settingsStore.load() } catch { }; vm = AskViewModel(llm: makeLLM(), browser: MockBrowserService()) }
     private func ask(_ q: String) async -> String { await vm?.ask(question: q); return await vm?.answer ?? "" }
 }
 struct MainView: View {
-    let vm: AskViewModel?
-    let onAsk: (String) async -> String
+    let vm: AskViewModel?; let onAsk: (String) async -> String
     @State private var q = ""; @State private var a = ""
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
