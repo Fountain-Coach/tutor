@@ -18,6 +18,8 @@ Run the setup script, which generates a minimal local Swift package in this fold
 ./setup.sh
 ```
 
+Advanced: `./setup.sh --upstream` (or `SETUP_MODE=upstream ./setup.sh`) attempts to scaffold via the upstream monorepo and copy its generated files here; falls back to local if it fails.
+
 ## Playing audio (TypeScript)
 
 Load a MIDI file and route it into an `AudioContext`. The player will handle decoding and playback once `play()` is called:

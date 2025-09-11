@@ -88,9 +88,11 @@ xed .
 
 ### What the script does (quick)
 - Inputs: app name inferred by the tutorial folder (`HelloFountainAI`).
-- Actions: generates a minimal `Package.swift` and `main.swift` in-place.
+- Actions (default): generates a minimal `Package.swift` and `main.swift` in-place.
 - Outputs: creates/overwrites those two files in this folder.
 - Re-running: safe; it will overwrite the files. Delete them to reset.
+
+Advanced: `./setup.sh --upstream` (or `SETUP_MODE=upstream ./setup.sh`) attempts to scaffold via the upstream monorepo and copy its generated `main.swift` here; falls back to local if that fails.
 
 ## 3. Build and run
 Build the project and launch it locally:
