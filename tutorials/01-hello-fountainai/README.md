@@ -70,18 +70,15 @@ swift --version
 Expected: Swift prints a 6.1+ version.
 
 ## 2. Scaffold the app
-Run the provided setup script, which pulls in the FountainAI app-creation template from the [the-fountainai](https://github.com/Fountain-Coach/the-fountainai) repo:
+Run the provided setup script, which generates a minimal local Swift package in this folder:
 
 ```bash
 ./setup.sh
 ```
 
-The script clones the template repository into a temporary folder and runs its
-`new-gui-app` helper to scaffold the **HelloFountainAI** target. It then copies
-the generated `main.swift` and `Package.swift` into this tutorial directory and
-prints status messages such as where the files were written. By default it runs
-non‑interactively, so no prompts appear unless you pass a custom bundle
-identifier as an argument.
+The script writes `Package.swift` and `main.swift` for the **HelloFountainAI**
+executable right here. It keeps the layout simple (single source file) so you
+can focus on the build/run flow.
 
 Expected: `main.swift` and `Package.swift` appear in this folder. Open in Xcode with:
 
@@ -90,10 +87,10 @@ xed .
 ```
 
 ### What the script does (quick)
-- Inputs: optional bundle identifier arg; defaults to a HelloFountainAI app.
-- Actions: clones the template to a temp dir, runs the `new-gui-app` helper, then copies `main.swift` and `Package.swift` here.
-- Outputs: creates/overwrites `main.swift` and `Package.swift` in this folder; prints paths and status lines.
-- Re-running: safe; it will overwrite those two files. Delete them to reset.
+- Inputs: app name inferred by the tutorial folder (`HelloFountainAI`).
+- Actions: generates a minimal `Package.swift` and `main.swift` in-place.
+- Outputs: creates/overwrites those two files in this folder.
+- Re-running: safe; it will overwrite the files. Delete them to reset.
 
 ## 3. Build and run
 Build the project and launch it locally:
@@ -112,7 +109,7 @@ Build complete! (0.1s)
 Hello, FountainAI!
 ```
 
-Tip (macOS app bundle): If you’re working inside the FountainAI monorepo, you can also bundle a GUI target with `Scripts/make_app.sh <Name>` and open `dist/<Name>.app`.
+Tip (macOS app bundle): The upstream monorepo can bundle GUI targets with `Scripts/make_app.sh <Name>` and open `dist/<Name>.app`.
 ## Exercise: Customize the greeting
 
 Try editing the generated `main.swift` to see how code changes affect the running program:

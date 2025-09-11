@@ -12,7 +12,7 @@ Play audio and synchronize your UI using MIDI 2.0 timing. This lesson shows Type
   ```
 
 ## Scaffold the project
-Run the setup script, which pulls from the upstream FountainAI monorepo and prepares a starter project:
+Run the setup script, which generates a minimal local Swift package in this folder:
 
 ```bash
 ./setup.sh

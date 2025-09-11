@@ -9,7 +9,7 @@ Call FountainAI’s OpenAPI endpoints from any HTTP client. This tutorial focuse
 - Ensure you have an API key or local gateway token.
 
 ## 1. Scaffold the project
-Run the setup script, which uses the FountainAI app-creation template from the [the-fountainai](https://github.com/Fountain-Coach/the-fountainai) repo:
+Run the setup script, which generates a minimal local Swift package in this folder:
 
 ```bash
 ./setup.sh

@@ -12,7 +12,7 @@ Combine UI (Teatro), persistence (FountainStore), multimedia (MIDI2), and AI (Op
   ```
 
 ## Setup
-Run the setup script, which pulls from the upstream FountainAI monorepo and prepares a starter project:
+Run the setup script, which generates a minimal local Swift package in this folder:
 
 ```bash
 ./setup.sh

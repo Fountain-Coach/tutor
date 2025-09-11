@@ -12,7 +12,7 @@ Modify the scaffolded user interface using FountainAI’s Teatro DSL. This tutor
   ```
 
 ## 1. Scaffold the project
-Run the setup script, which pulls from the upstream [FountainAI monorepo](https://github.com/Fountain-Coach/the-fountainai) and prepares a starter project:
+Run the setup script, which generates a minimal local Swift package in this folder:
 
 ```bash
 ./setup.sh
