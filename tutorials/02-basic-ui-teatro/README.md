@@ -1,6 +1,6 @@
 # 02 – Basic UI with Teatro
 
-Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the FountainAI monorepo; build and run locally to explore the concept.
+Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the FountainAI monorepo; build and run locally to explore the concept. This tutorial uses the `ai` profile by default to include FountainAI client libraries.
 
 Modify the scaffolded user interface using FountainAI’s Teatro DSL. This tutorial operates on a minimal SPM app; `setup.sh` wraps the upstream FountainAI scripts and copies generated files locally. You don’t need to run the full Gateway/services for this lesson.
 

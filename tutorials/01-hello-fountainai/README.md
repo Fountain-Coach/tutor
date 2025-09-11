@@ -70,7 +70,7 @@ swift --version
 Expected: Swift prints a 6.1+ version.
 
 ## 2. Scaffold the app
-Run the provided setup script, which generates a minimal local Swift package in this folder:
+Run the provided setup script, which generates a local Swift package in this folder (Hello uses the `ai` profile by default to include FountainAI client libraries):
 
 ```bash
 ./setup.sh
