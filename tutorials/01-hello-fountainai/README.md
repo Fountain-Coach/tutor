@@ -98,7 +98,7 @@ Advanced: `./setup.sh --upstream` (or `SETUP_MODE=upstream ./setup.sh`) uses a S
 Build the project and launch it locally:
 
 ```bash
-swift build
+./build.sh
 swift run
 ```
 
@@ -115,7 +115,7 @@ Hello, FountainAI!
 Execute the unit tests:
 
 ```bash
-swift test
+./test.sh
 ```
 Expected: Tests pass (e.g., `testGreetReturnsHello`).
 

@@ -44,7 +44,7 @@ For a detailed end-to-end build, consult the [PDF guide](./Building%20a%20macOS%
 Compile and launch the project:
 
 ```bash
-swift build
+./build.sh
 swift run
 ```
 
@@ -59,7 +59,7 @@ Tip (macOS app bundle): Inside the FountainAI monorepo, you can bundle with `Scr
 
 ## Run tests
 ```bash
-swift test
+./test.sh
 ```
 Add tests for persistence helpers, cue timing calculations, and any model-formatting logic.
 

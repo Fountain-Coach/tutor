@@ -20,7 +20,7 @@ Deep knowledge: See docs/dependency-management-deep-dive.md for how profiles map
 2. Change into a tutorial: `cd tutorials/01-hello-fountainai`
 3. Make the script executable if needed: `chmod +x setup.sh`
 4. Scaffold the app: `./setup.sh`
-5. Build and run: `swift build && swift run`
+5. Build and run: `./build.sh && swift run`
 
 Expected: the app prints a greeting in the terminal. Open the project in Xcode with `xed .` if you prefer a GUI.
 

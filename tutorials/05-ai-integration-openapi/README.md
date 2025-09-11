@@ -71,7 +71,7 @@ task.resume()
 Compile and run the package:
 
 ```bash
-swift build
+./build.sh
 swift run
 ```
 
@@ -82,7 +82,7 @@ swift run
 
 ## Run tests
 ```bash
-swift test
+./test.sh
 ```
 Add tests that validate your request-building logic (headers, JSON encoding) and response parsing.
 

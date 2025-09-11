@@ -69,7 +69,7 @@ These snippets demonstrate how audio playback and UI synchronization can be achi
 Compile and launch the minimal Swift package (for structure only):
 
 ```bash
-swift build
+./build.sh
 swift run
 ```
 
@@ -77,7 +77,7 @@ Expected: Swift package builds successfully. The MIDI2 examples run in a browser
 
 ## Run tests
 ```bash
-swift test
+./test.sh
 ```
 Keep Swift tests focused on any local helpers; test TS code with your chosen runner (e.g., Vitest) in a separate step.
 

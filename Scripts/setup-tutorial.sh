@@ -44,7 +44,8 @@ fi
 
 TARGET_DIR="$(pwd)"
 PKG_FILE="$TARGET_DIR/Package.swift"
-MAIN_FILE="$TARGET_DIR/main.swift"
+SRC_DIR="$TARGET_DIR/Sources/$APP_NAME"
+MAIN_FILE="$SRC_DIR/main.swift"
 
 generate_local() {
   if [[ "${USE_FOUNTAIN_DEPS:-0}" == "1" ]]; then
@@ -52,17 +53,12 @@ generate_local() {
     TARGET_DEPS=()
     case "$PROFILE" in
       basic)
-        TARGET_DEPS+=(".product(name: \"FountainAIAdapters\", package: \"the-fountainai\")")
-        TARGET_DEPS+=(".product(name: \"FountainAICore\", package: \"the-fountainai\")")
+        # no external deps
         ;;
       ai)
-        TARGET_DEPS+=(".product(name: \"FountainAIAdapters\", package: \"the-fountainai\")")
-        TARGET_DEPS+=(".product(name: \"FountainAICore\", package: \"the-fountainai\")")
         TARGET_DEPS+=(".product(name: \"LLMGatewayAPI\", package: \"the-fountainai\")")
         ;;
       persist)
-        TARGET_DEPS+=(".product(name: \"FountainAIAdapters\", package: \"the-fountainai\")")
-        TARGET_DEPS+=(".product(name: \"FountainAICore\", package: \"the-fountainai\")")
         TARGET_DEPS+=(".product(name: \"PersistAPI\", package: \"the-fountainai\")")
         TARGET_DEPS+=(".product(name: \"FountainStoreClient\", package: \"the-fountainai\")")
         ;;
@@ -73,8 +69,6 @@ generate_local() {
         TARGET_DEPS+=(".product(name: \"FlexBridge\", package: \"the-fountainai\")")
         ;;
       capstone)
-        TARGET_DEPS+=(".product(name: \"FountainAIAdapters\", package: \"the-fountainai\")")
-        TARGET_DEPS+=(".product(name: \"FountainAICore\", package: \"the-fountainai\")")
         TARGET_DEPS+=(".product(name: \"LLMGatewayAPI\", package: \"the-fountainai\")")
         TARGET_DEPS+=(".product(name: \"PersistAPI\", package: \"the-fountainai\")")
         TARGET_DEPS+=(".product(name: \"FountainStoreClient\", package: \"the-fountainai\")")
@@ -84,8 +78,6 @@ generate_local() {
         TARGET_DEPS+=(".product(name: \"FlexBridge\", package: \"the-fountainai\")")
         ;;
       full-client)
-        TARGET_DEPS+=(".product(name: \"FountainAIAdapters\", package: \"the-fountainai\")")
-        TARGET_DEPS+=(".product(name: \"FountainAICore\", package: \"the-fountainai\")")
         TARGET_DEPS+=(".product(name: \"GatewayAPI\", package: \"the-fountainai\")")
         TARGET_DEPS+=(".product(name: \"LLMGatewayAPI\", package: \"the-fountainai\")")
         TARGET_DEPS+=(".product(name: \"PersistAPI\", package: \"the-fountainai\")")
@@ -117,12 +109,7 @@ let package = Package(
         .package(url: "https://github.com/Fountain-Coach/the-fountainai.git", branch: "main")
     ],
     targets: [
-        .executableTarget(
-            name: "$APP_NAME",
-            dependencies: [$DEPS_JOINED],
-            path: ".",
-            sources: ["main.swift", "Greeter.swift"]
-        ),
+        .executableTarget(name: "$APP_NAME", dependencies: [$DEPS_JOINED]),
         .testTarget(
             name: "${APP_NAME}Tests",
             dependencies: ["$APP_NAME"],
@@ -143,11 +130,7 @@ let package = Package(
         .executable(name: "$APP_NAME", targets: ["$APP_NAME"])
     ],
     targets: [
-        .executableTarget(
-            name: "$APP_NAME",
-            path: ".",
-            sources: ["main.swift", "Greeter.swift"]
-        ),
+        .executableTarget(name: "$APP_NAME"),
         .testTarget(
             name: "${APP_NAME}Tests",
             dependencies: ["$APP_NAME"],
@@ -158,8 +141,9 @@ let package = Package(
 EOF
   fi
 
+  mkdir -p "$SRC_DIR"
   # Always ensure a Greeter for tests; harmless if unused by main
-  cat > "$TARGET_DIR/Greeter.swift" <<'SWIFT'
+  cat > "$SRC_DIR/Greeter.swift" <<'SWIFT'
 import Foundation
 
 public func greet() -> String {
@@ -167,7 +151,64 @@ public func greet() -> String {
 }
 SWIFT
 
-  if [[ ! -f "$MAIN_FILE" ]]; then
+  # Write main.swift: AI UI for profiles with LLM, otherwise simple greet()
+  if [[ "${USE_FOUNTAIN_DEPS:-0}" == "1" && ( "$PROFILE" == "ai" || "$PROFILE" == "capstone" || "$PROFILE" == "full-client" ) ]]; then
+    # Prefer App.swift for @main; remove any main.swift copied from upstream
+    rm -f "$MAIN_FILE"
+    cat > "$SRC_DIR/App.swift" <<'SWIFT'
+import SwiftUI
+import LLMGatewayAPI
+
+@main
+struct AppEntry: App {
+    var body: some Scene {
+        WindowGroup { ContentView() }
+    }
+}
+
+struct ContentView: View {
+    @State private var prompt: String = "Say hello to FountainAI"
+    @State private var responseText: String = ""
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("LLM Gateway Chat").font(.title2)
+            TextField("Your prompt", text: $prompt)
+                .textFieldStyle(.roundedBorder)
+            HStack {
+                Button(isLoading ? "Asking…" : "Ask") {
+                    Task { await ask() }
+                }
+                .disabled(isLoading || prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            Divider()
+            if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
+            ScrollView { Text(responseText).frame(maxWidth: .infinity, alignment: .leading) }
+        }
+        .padding()
+        .frame(minWidth: 600, minHeight: 400)
+    }
+
+    func ask() async {
+        isLoading = true; defer { isLoading = false }
+        do {
+            let base = ProcessInfo.processInfo.environment["LLM_GATEWAY_URL"] ?? "http://localhost:8080/api/v1"
+            guard let url = URL(string: base) else { errorMessage = "Invalid LLM_GATEWAY_URL"; return }
+            let token = ProcessInfo.processInfo.environment["FOUNTAIN_AI_KEY"]
+            let client = LLMGatewayClient(baseURL: url, bearerToken: token)
+            let req = ChatRequest(model: "gpt-4o-mini", messages: [ChatMessage(role: "user", content: prompt)])
+            let result = try await client.chat(req)
+            responseText = String(describing: result)
+            errorMessage = nil
+        } catch {
+            errorMessage = String(describing: error)
+        }
+    }
+}
+SWIFT
+  else
     cat > "$MAIN_FILE" <<'SWIFT'
 import Foundation
 
@@ -185,6 +226,26 @@ final class ${APP_NAME}Tests: XCTestCase {
     }
 }
 EOF
+  # Build/Test wrappers to avoid module cache permission issues
+  cat > "$TARGET_DIR/build.sh" <<'BASH'
+#!/usr/bin/env bash
+set -euo pipefail
+export CLANG_MODULE_CACHE_PATH="${CLANG_MODULE_CACHE_PATH:-$PWD/.modulecache}"
+mkdir -p "$CLANG_MODULE_CACHE_PATH" "$PWD/.swift-module-cache"
+swift build --disable-sandbox \
+  -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE_PATH" \
+  -Xswiftc -module-cache-path -Xswiftc "$PWD/.swift-module-cache" "$@"
+BASH
+  cat > "$TARGET_DIR/test.sh" <<'BASH'
+#!/usr/bin/env bash
+set -euo pipefail
+export CLANG_MODULE_CACHE_PATH="${CLANG_MODULE_CACHE_PATH:-$PWD/.modulecache}"
+mkdir -p "$CLANG_MODULE_CACHE_PATH" "$PWD/.swift-module-cache"
+swift test --disable-sandbox \
+  -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE_PATH" \
+  -Xswiftc -module-cache-path -Xswiftc "$PWD/.swift-module-cache" "$@"
+BASH
+  chmod +x "$TARGET_DIR/build.sh" "$TARGET_DIR/test.sh"
   echo "Generated Package.swift and main.swift for $APP_NAME in $TARGET_DIR (local mode)"
 }
 
@@ -214,10 +275,11 @@ attempt_upstream() {
     swiftc Sources/ScaffoldCLI/main.swift -o .build/scaffold-cli 2>/dev/null && \
     ./.build/scaffold-cli --repo "$repodir" --app "$APP_NAME" ${BUNDLE_ID:+--bundle-id "$BUNDLE_ID"}
   ) && {
-    if [[ -f "$repodir/apps/$APP_NAME/main.swift" ]]; then
-      cp "$repodir/apps/$APP_NAME/main.swift" "$MAIN_FILE"
-      echo "Copied generated main.swift from upstream scaffold."
-    fi
+  if [[ -f "$repodir/apps/$APP_NAME/main.swift" ]]; then
+    mkdir -p "$SRC_DIR"
+    cp "$repodir/apps/$APP_NAME/main.swift" "$MAIN_FILE"
+    echo "Copied generated main.swift from upstream scaffold."
+  fi
     USE_FOUNTAIN_DEPS=1 generate_local
     echo "Prepared local package using scaffolded main.swift."
     cleanup; return 0
@@ -284,6 +346,7 @@ SWIFT
   \$1\$2\n    .executableTarget(\n        name: \"\$app\",\n        dependencies: [\"FountainAIAdapters\", \"FountainAICore\"],\n        path: \"apps\/\$app\"\n    ),\n\$3/s" "$repodir/Package.swift"
 
   # Copy scaffolded main.swift into tutorial; keep local Package.swift for portability
+  mkdir -p "$SRC_DIR"
   cp "$repodir/apps/$APP_NAME/main.swift" "$MAIN_FILE" || true
   echo "Copied generated main.swift from Perl-based scaffold."
   USE_FOUNTAIN_DEPS=1 generate_local

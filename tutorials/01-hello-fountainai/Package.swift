@@ -11,14 +11,7 @@ let package = Package(
         .package(url: "https://github.com/Fountain-Coach/the-fountainai.git", branch: "main")
     ],
     targets: [
-        .executableTarget(
-            name: "HelloFountainAI",
-            dependencies: [.product(name: "FountainAIAdapters", package: "the-fountainai"),
-                .product(name: "FountainAICore", package: "the-fountainai"),
-                .product(name: "LLMGatewayAPI", package: "the-fountainai")],
-            path: ".",
-            sources: ["main.swift", "Greeter.swift"]
-        ),
+        .executableTarget(name: "HelloFountainAI", dependencies: [.product(name: "LLMGatewayAPI", package: "the-fountainai")]),
         .testTarget(
             name: "HelloFountainAITests",
             dependencies: ["HelloFountainAI"],

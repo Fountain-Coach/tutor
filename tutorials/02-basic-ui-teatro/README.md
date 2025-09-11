@@ -49,7 +49,7 @@ When you press the button, the handler runs and prints to the console.
 Compile the project and launch the generated SwiftUI app:
 
 ```bash
-swift build
+./build.sh
 swift run
 ```
 
@@ -59,7 +59,7 @@ Expected: A window appears with “Welcome to Teatro” and a “Tap Me” butto
 Execute the unit tests:
 
 ```bash
-swift test
+./test.sh
 ```
 Expected: Tests pass. Add tests for any helpers you extract from the UI logic.
 

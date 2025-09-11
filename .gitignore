@@ -2,6 +2,8 @@
 # Builds
 .build/
 build/
+.modulecache/
+.swift-module-cache/
 
 # Package resolution and dependencies
 .swiftpm/

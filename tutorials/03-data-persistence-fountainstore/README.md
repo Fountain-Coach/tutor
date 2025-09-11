@@ -67,7 +67,7 @@ With these building blocks you can manage persistent collections of notes in you
 Compile and execute the package:
 
 ```bash
-swift build
+./build.sh
 swift run
 ```
 
@@ -75,7 +75,7 @@ Expected: The program runs without error. Add temporary `print(notes.count)` or 
 
 ## Run tests
 ```bash
-swift test
+./test.sh
 ```
 Add tests for save/load helpers and edge cases (empty file, corrupt JSON) as you expand functionality.
 
