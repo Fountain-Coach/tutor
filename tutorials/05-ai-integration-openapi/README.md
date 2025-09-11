@@ -1,6 +1,12 @@
 # 05 – AI Integration with OpenAPI
 
-Learn how to call FountainAI services from any HTTP client by using its OpenAPI endpoints.
+Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the FountainAI monorepo; build and run locally to explore the concept.
+
+Call FountainAI’s OpenAPI endpoints from any HTTP client. This tutorial focuses on the LLM Gateway’s generate API using environment-driven base URLs; you can target a hosted deployment or your locally running gateway.
+
+## Before you begin
+- Run all commands from `tutorials/05-ai-integration-openapi/`.
+- Ensure you have an API key or local gateway token.
 
 ## 1. Scaffold the project
 Run the setup script, which uses the FountainAI app-creation template from the [the-fountainai](https://github.com/Fountain-Coach/the-fountainai) repo:
@@ -10,19 +16,20 @@ Run the setup script, which uses the FountainAI app-creation template from the [
 ```
 
 ## 2. Get API access
-Create an account and generate an API key, then expose it to your environment:
+Obtain an API key or local token, then expose it to your environment:
 
 ```bash
 export FOUNTAIN_AI_KEY="sk-your-key"
+export LLM_GATEWAY_URL="http://localhost:8080/api/v1"  # example; adjust as needed
 ```
 
 ## 3. Invoke an AI endpoint
-Send a POST request to the `/v1/generate` path with the desired model and prompt.
+Send a POST request to the LLM Gateway `generate` path with the desired model and prompt.
 
 ### cURL example
 
 ```bash
-curl https://api.fountain.ai/v1/generate \
+curl "$LLM_GATEWAY_URL/generate" \
   -H "Authorization: Bearer $FOUNTAIN_AI_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -37,7 +44,8 @@ curl https://api.fountain.ai/v1/generate \
 import Foundation
 
 let apiKey = ProcessInfo.processInfo.environment["FOUNTAIN_AI_KEY"]!
-let url = URL(string: "https://api.fountain.ai/v1/generate")!
+let base = ProcessInfo.processInfo.environment["LLM_GATEWAY_URL"] ?? "http://localhost:8080/api/v1"
+let url = URL(string: base + "/generate")!
 var request = URLRequest(url: url)
 request.httpMethod = "POST"
 request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -64,6 +72,11 @@ Compile and run the package:
 swift build
 swift run
 ```
+
+## Troubleshooting
+- 401/403: verify `$FOUNTAIN_AI_KEY` is set and valid for the target gateway.
+- Connection refused: ensure your local gateway is running and `LLM_GATEWAY_URL` is correct.
+- Model errors: list available models or confirm the `model` name expected by your gateway.
 
 ## Next steps
 Use the responses in your app to drive features like summarization, dialogue, or content generation.

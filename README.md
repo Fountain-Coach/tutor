@@ -1,29 +1,40 @@
 # FountainAI Tutorial Series
 
-This repository accompanies the [FountainAI Comprehensive Tutorial Series (Beginner to Expert)](./FountainAI%20Comprehensive%20Tutorial%20Series%20(Beginner%20to%20Expert).pdf). Each tutorial includes a `setup.sh` script that pulls the [FountainAI template](https://github.com/Fountain-Coach/the-fountainai) and produces a runnable SwiftUI app. The guides follow a template-first approach so you can focus on customizing the core FountainAI stack.
+Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the FountainAI monorepo; build and run locally to explore the concept.
+
+This repository hosts the tutorial content for FountainAI. Each lesson scaffolds a minimal Swift Package app via `setup.sh`, which wraps scripts from the upstream [FountainAI monorepo](https://github.com/Fountain-Coach/the-fountainai). Tutorials focus on learning the workflow and core concepts, not running the full platform services.
+
+## Big Picture: FountainAI (upstream)
+- OpenAPI-first contracts in `openapi/` define personas and policies (gateway, auth, rate limit, security, persistence).
+- Core services in `services/`: `GatewayServer` (request pipeline) and `PersistServer` (FountainStore).
+- App tooling in `Scripts/`: `new-gui-app.sh <Name>` scaffolds `apps/<Name>`; `make_app.sh <Name>` bundles a `.app` on macOS.
+- These tutorials copy the generated `main.swift` and `Package.swift` locally for a minimal SPM experience.
 
 ## Getting Started
 
-1. `git clone` this repository.
-2. `cd tutorials/01-hello-fountainai && ./setup.sh`
-3. `swift build` and `swift run`
+1. Clone this repo.
+2. Change into a tutorial: `cd tutorials/01-hello-fountainai`
+3. Make the script executable if needed: `chmod +x setup.sh`
+4. Scaffold the app: `./setup.sh`
+5. Build and run: `swift build && swift run`
 
-The `setup.sh` script pulls the app template from [the-fountainai](https://github.com/Fountain-Coach/the-fountainai) and prepares the Swift package automatically.
+Expected: the app prints a greeting in the terminal. Open the project in Xcode with `xed .` if you prefer a GUI.
 
-## What You CAN Do
+## What You Can Do
 
-- Run `tutorials/<name>/setup.sh` to scaffold a tutorial project.
-- Compile the generated app with `swift build`.
-- Launch the app from the command line using `swift run`.
+- Use `tutorials/<name>/setup.sh` to generate a minimal app per lesson.
+- Build with `swift build` and run with `swift run`.
+- Read each tutorial’s README to connect UI events, persistence, MIDI, and AI.
 
-## Limitations
+## Full Stack Option
 
-- GUI tests and other macOS-only features require running on macOS.
+- To explore the full platform, clone the upstream monorepo and run/build services there.
+- On macOS, bundle GUI targets with `Scripts/make_app.sh <Name>` and launch `dist/<Name>.app`.
 
 ## Prerequisites
 
 - Swift 6.1+ toolchain (macOS 14+ recommended)
-- `OPENAI_API_KEY` environment variable for AI features
+- Optional: `OPENAI_API_KEY` for AI features
 - Basic familiarity with Swift and SwiftUI
 
 ## Tutorials
@@ -34,4 +45,3 @@ The `setup.sh` script pulls the app template from [the-fountainai](https://githu
 - [04 – Multimedia with MIDI2](tutorials/04-multimedia-midi2/README.md)
 - [05 – AI Integration with OpenAPI](tutorials/05-ai-integration-openapi/README.md)
 - [06 – Screenplay Editor Capstone](tutorials/06-screenplay-editor-capstone/README.md)
-

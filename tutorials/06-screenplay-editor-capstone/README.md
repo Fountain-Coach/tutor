@@ -1,9 +1,18 @@
-# Screenplay Editor Capstone
+# 06 – Screenplay Editor Capstone
 
-This capstone combines UI, persistence, multimedia, and AI features to form a simple screenplay editor.
+Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the FountainAI monorepo; build and run locally to explore the concept.
+
+Combine UI (Teatro), persistence (FountainStore), multimedia (MIDI2), and AI (OpenAPI) into a simple screenplay editor. This capstone still uses the template-driven SPM workflow; no full platform services are required, though AI calls can target a local or hosted gateway.
+
+## Before you begin
+- Run all commands from `tutorials/06-screenplay-editor-capstone/`.
+- If needed, make the script executable:
+  ```bash
+  chmod +x setup.sh
+  ```
 
 ## Setup
-Run the setup script, which uses the FountainAI app-creation template from the [the-fountainai](https://github.com/Fountain-Coach/the-fountainai) repo:
+Run the setup script, which pulls from the upstream FountainAI monorepo and prepares a starter project:
 
 ```bash
 ./setup.sh
@@ -36,3 +45,15 @@ Compile and launch the project:
 swift build
 swift run
 ```
+
+Expected: The GUI shows a main scene with buttons to save notes, play a cue, and request AI help. Console logs reflect events and actions.
+
+Tip (macOS app bundle): Inside the FountainAI monorepo, you can bundle with `Scripts/make_app.sh ScreenplayEditor` and open `dist/ScreenplayEditor.app`.
+
+## Troubleshooting
+- Permission denied: `chmod +x setup.sh` and re-run.
+- MIDI not playing: verify `cue.mid` path and audio permissions.
+- AI errors: confirm `FOUNTAIN_AI_KEY`/`LLM_GATEWAY_URL` are set and reachable.
+
+## Next steps
+Explore deeper integration in the upstream monorepo (Gateway plugins, persistence services) or extend the editor with scenes, formatting, and export.

@@ -1,15 +1,24 @@
 # 02 – Basic UI with Teatro
 
-This guide shows how to modify the scaffolded user interface using FountainAI's Teatro domain-specific language (DSL).
+Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the FountainAI monorepo; build and run locally to explore the concept.
+
+Modify the scaffolded user interface using FountainAI’s Teatro DSL. This tutorial operates on a minimal SPM app; `setup.sh` wraps the upstream FountainAI scripts and copies generated files locally. You don’t need to run the full Gateway/services for this lesson.
+
+## Before you begin
+- Run all commands from `tutorials/02-basic-ui-teatro/`.
+- If needed, make the script executable:
+  ```bash
+  chmod +x setup.sh
+  ```
 
 ## 1. Scaffold the project
-Run the setup script, which pulls in the FountainAI app-creation template from the [the-fountainai](https://github.com/Fountain-Coach/the-fountainai) repo:
+Run the setup script, which pulls from the upstream [FountainAI monorepo](https://github.com/Fountain-Coach/the-fountainai) and prepares a starter project:
 
 ```bash
 ./setup.sh
 ```
 
-The script creates a starter project with a `MainScene.teatro` file that declares the UI.
+Expected: `MainScene.teatro` appears alongside Swift sources. Open the folder in Xcode with `xed .` (macOS) or your editor of choice.
 
 ## 2. Define the interface
 Open `MainScene.teatro` and add components. Teatro uses a declarative syntax:
@@ -41,3 +50,15 @@ Compile the project and launch the generated SwiftUI app:
 swift build
 swift run
 ```
+
+Expected: A window appears with “Welcome to Teatro” and a “Tap Me” button. Tapping the button prints “Button was tapped” in the console.
+
+Tip (macOS app bundle): If you’re working inside the FountainAI monorepo, you can bundle a GUI target with `Scripts/make_app.sh <Name>` and open `dist/<Name>.app`.
+
+## Troubleshooting
+- Permission denied: `chmod +x setup.sh` and re-run.
+- No `MainScene.teatro`: re-run `./setup.sh` to regenerate files.
+- Build errors: ensure Swift 6.1+ is installed and re-check with `swift --version`.
+
+## Next steps
+Continue to [03 – Data Persistence with FountainStore](../03-data-persistence-fountainstore/README.md) to save and load data from disk.

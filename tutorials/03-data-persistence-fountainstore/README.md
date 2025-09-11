@@ -1,9 +1,18 @@
 # 03 – Data Persistence with FountainStore
 
-This tutorial demonstrates how to persist simple data using **FountainStore**. You will create a minimal `Note` model, save instances, and load them back into memory.
+Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the FountainAI monorepo; build and run locally to explore the concept.
+
+Persist simple data using **FountainStore** within a minimal SPM app. This tutorial uses the template workflow (no full Gateway/services required) and focuses on saving and loading a tiny `Note` model.
+
+## Before you begin
+- Run all commands from `tutorials/03-data-persistence-fountainstore/`.
+- If needed, make the script executable:
+  ```bash
+  chmod +x setup.sh
+  ```
 
 ## 1. Scaffold the project
-Run the setup script, which uses the FountainAI app-creation template from the [the-fountainai](https://github.com/Fountain-Coach/the-fountainai) repo:
+Run the setup script, which pulls from the upstream FountainAI monorepo and prepares a starter project:
 
 ```bash
 ./setup.sh
@@ -60,3 +69,12 @@ swift build
 swift run
 ```
 
+Expected: The program runs without error. Add temporary `print(notes.count)` or `print(first.text)` statements to verify the data roundtrip locally.
+
+## Troubleshooting
+- Permission denied: `chmod +x setup.sh` and re-run.
+- Build errors: ensure Swift 6.1+ is installed; check `swift --version`.
+- File not found: ensure the `filename` path is writable (e.g., use a simple filename like `notes.json` in the current directory during development).
+
+## Next steps
+Proceed to [04 – Multimedia with MIDI2](../04-multimedia-midi2/README.md) to integrate audio playback and timing updates.

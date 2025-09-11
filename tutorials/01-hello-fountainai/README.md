@@ -1,9 +1,14 @@
 # 01 – Hello FountainAI
 
-FountainAI is a theatre-themed Swift framework for crafting AI‑powered apps.
-In this first lesson you will scaffold a tiny "Hello FountainAI" application
-from the template repository. By the end you'll know how to verify your Swift
-toolchain, generate the starter project, and compile and launch it locally.
+Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the FountainAI monorepo; build and run locally to explore the concept.
+
+FountainAI is a Swift monorepo that treats every request like a theatre play: OpenAPI “scripts” define contracts, Swift “stage crew” services enforce them, and apps are the audience-facing experience. This first tutorial is a minimal onramp: it scaffolds a tiny Hello app to verify your toolchain and the template workflow. It does not run the full Gateway or services.
+
+## FountainAI in One Glance
+- OpenAPI contracts: `openapi/` drives the platform’s personas and policies (gateway, auth, rate limit, security, persistence).
+- Core services: `services/GatewayServer` (pluggable gateway) and `services/PersistServer` (FountainStore persistence).
+- App scaffolding: `Scripts/new-gui-app.sh <Name>` creates a SwiftUI target in `apps/<Name>`; `Scripts/make_app.sh <Name>` bundles a `.app`.
+- This repo: tutorials only. Local `setup.sh` wraps the monorepo scripts and copies the generated `main.swift` and `Package.swift` here for a minimal SPM app.
 
 ## Learning outcomes
 
@@ -106,6 +111,8 @@ Building for debugging...
 Build complete! (0.1s)
 Hello, FountainAI!
 ```
+
+Tip (macOS app bundle): If you’re working inside the FountainAI monorepo, you can also bundle a GUI target with `Scripts/make_app.sh <Name>` and open `dist/<Name>.app`.
 ## Exercise: Customize the greeting
 
 Try editing the generated `main.swift` to see how code changes affect the running program:

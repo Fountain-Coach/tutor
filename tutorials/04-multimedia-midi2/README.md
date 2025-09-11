@@ -1,15 +1,24 @@
-# MIDI2 Multimedia Tutorial
+# 04 – Multimedia with MIDI2
 
-This tutorial shows how to play audio and keep your user interface synchronized with MIDI 2.0 data.
+Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the FountainAI monorepo; build and run locally to explore the concept.
+
+Play audio and synchronize your UI using MIDI 2.0 timing. This lesson shows TypeScript snippets for a browser/Node context; your minimal Swift package scaffolding is for project structure only and does not execute the TS directly.
+
+## Before you begin
+- Run all commands from `tutorials/04-multimedia-midi2/`.
+- If needed, make the script executable:
+  ```bash
+  chmod +x setup.sh
+  ```
 
 ## Scaffold the project
-Run the setup script, which uses the FountainAI app-creation template from the [the-fountainai](https://github.com/Fountain-Coach/the-fountainai) repo:
+Run the setup script, which pulls from the upstream FountainAI monorepo and prepares a starter project:
 
 ```bash
 ./setup.sh
 ```
 
-## Playing Audio
+## Playing audio (TypeScript)
 
 Load a MIDI file and route it into an `AudioContext`. The player will handle decoding and playback once `play()` is called:
 
@@ -23,7 +32,7 @@ await player.load('/assets/cue.mid');
 player.play();
 ```
 
-## Synchronizing UI via MIDI2
+## Synchronizing UI via MIDI2 (TypeScript)
 
 During playback, the player emits timing information that can drive interface updates. Listen for `position` events to keep the UI in sync with the audio:
 
@@ -33,7 +42,7 @@ player.on('position', (seconds) => {
 });
 ```
 
-## Play/Pause Controls
+## Play/Pause controls (HTML + TypeScript)
 
 Hook simple controls into the player with standard DOM events:
 
@@ -52,12 +61,22 @@ Hook simple controls into the player with standard DOM events:
 </script>
 ```
 
-These snippets demonstrate how audio playback and UI synchronization can be achieved using MIDI 2.0.
+These snippets demonstrate how audio playback and UI synchronization can be achieved using MIDI 2.0. Use a simple static server or bundler to run them.
 
-## Build and run
-Compile and launch the project:
+## Build and run (Swift package)
+Compile and launch the minimal Swift package (for structure only):
 
 ```bash
 swift build
 swift run
 ```
+
+Expected: Swift package builds successfully. The MIDI2 examples run in a browser or Node environment.
+
+## Troubleshooting
+- AudioContext blocked: user gesture may be required before playback in some browsers.
+- Asset path: ensure `cue.mid` resolves (serve from `/assets/` or adjust `load()` path).
+- TypeScript types: install `@types/node` or browser typings if bundling for the web.
+
+## Next steps
+Proceed to [05 – AI Integration with OpenAPI](../05-ai-integration-openapi/README.md) to call AI endpoints.
