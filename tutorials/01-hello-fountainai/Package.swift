@@ -11,7 +11,12 @@ let package = Package(
         .executableTarget(
             name: "HelloFountainAI",
             path: ".",
-            sources: ["main.swift"]
+            sources: ["main.swift", "Greeter.swift"]
+        ),
+        .testTarget(
+            name: "HelloFountainAITests",
+            dependencies: ["HelloFountainAI"],
+            path: "Tests/HelloFountainAITests"
         )
     ]
 )

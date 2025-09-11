@@ -92,7 +92,7 @@ xed .
 - Outputs: creates/overwrites those two files in this folder.
 - Re-running: safe; it will overwrite the files. Delete them to reset.
 
-Advanced: `./setup.sh --upstream` (or `SETUP_MODE=upstream ./setup.sh`) attempts to scaffold via the upstream monorepo and copy its generated `main.swift` here; falls back to local if that fails.
+Advanced: `./setup.sh --upstream` (or `SETUP_MODE=upstream ./setup.sh`) uses a Swift-based scaffolder (no awk) to scaffold in the upstream monorepo and copy its generated `main.swift` here; if the build or network is blocked, it automatically falls back to the local minimal package.
 
 ## 3. Build and run
 Build the project and launch it locally:

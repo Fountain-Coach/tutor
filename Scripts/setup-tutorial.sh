@@ -103,8 +103,7 @@ attempt_upstream() {
   local tmpdir
   tmpdir="$(mktemp -d)"
   local repodir="$tmpdir/the-fountainai"
-  # Ensure cleanup runs when this function returns (not on script exit)
-  trap "rm -rf '$tmpdir'" RETURN
+  cleanup() { rm -rf "$tmpdir"; }
   echo "Fetching FountainAI monorepo…"
   git clone --depth 1 https://github.com/Fountain-Coach/the-fountainai.git "$repodir" >/dev/null
   echo "Building scaffold-cli (Swift) black-box…"
@@ -115,12 +114,12 @@ attempt_upstream() {
   local cli="$(cd "$(dirname "$0")/../tools/scaffold-cli" && pwd)/.build/release/scaffold-cli"
   if [[ ! -x "$cli" ]]; then
     echo "Failed to build scaffold-cli. Falling back to local minimal package." >&2
-    return 1
+    cleanup; return 1
   fi
   echo "Scaffolding via scaffold-cli…"
   if ! "$cli" --repo "$repodir" --app "$APP_NAME" ${BUNDLE_ID:+--bundle-id "$BUNDLE_ID"}; then
     echo "scaffold-cli failed. Falling back to local minimal package." >&2
-    return 1
+    cleanup; return 1
   fi
   if [[ -f "$repodir/apps/$APP_NAME/main.swift" ]]; then
     cp "$repodir/apps/$APP_NAME/main.swift" "$MAIN_FILE"
@@ -129,6 +128,7 @@ attempt_upstream() {
   # Always use local minimal Package.swift for portability in this tutorial repo
   generate_local
   echo "Prepared local package using scaffolded main.swift."
+  cleanup
 }
 
 if [[ "$MODE" == "upstream" ]]; then
