@@ -111,6 +111,14 @@ Build complete! (0.1s)
 Hello, FountainAI!
 ```
 
+## 4. Run tests
+Execute the unit tests:
+
+```bash
+swift test
+```
+Expected: Tests pass (e.g., `testGreetReturnsHello`).
+
 Tip (macOS app bundle): The upstream monorepo can bundle GUI targets with `Scripts/make_app.sh <Name>` and open `dist/<Name>.app`.
 ## Exercise: Customize the greeting
 

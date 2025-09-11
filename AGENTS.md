@@ -6,12 +6,12 @@
 - Each tutorial includes a `README.md` plus sample code and assets (e.g., `MainScene.teatro`, `NoteStore.swift`, `CuePlayer.ts`, MIDI files).
 
 ## Build, Test, and Development Commands
-- This repo hosts guides and snippets; it is not a standalone build. Build snippets inside your local FountainAI template/app or Xcode project.
-- Example (from tutorial 01; scripts live in the FountainAI monorepo):
-  - `Scripts/selfcheck.sh` — verify toolchain.
-  - `Scripts/new-gui-app.sh HelloFountainAI` — scaffold a SwiftUI app.
-  - `Scripts/build-local.sh` — build locally.
-  - `scripts/start-local.sh HelloFountainAI` — run locally.
+- Per tutorial folder:
+  - `./setup.sh` — scaffold a minimal SwiftPM app (use `--upstream` for advanced mode).
+  - `swift build` — compile the app.
+  - `swift run` — run the app.
+  - `swift test` — run unit tests (required).
+- CI: GitHub Actions workflow (`.github/workflows/swift-ci.yml`) runs setup, build, and tests for all tutorials on PRs.
 
 ## Coding Style & Naming Conventions
 - Swift: 4-space indent; types `PascalCase`, members `lowerCamelCase`; one primary type per file; suffixes like `Store`, `Client` (e.g., `NoteStore.swift`, `AIClient.swift`).
@@ -20,11 +20,15 @@
 - Markdown: headings in Title Case; relative links; short paragraphs; fenced code blocks with language hints.
 
 ## Testing Guidelines
-- No centralized tests here. Validate snippets where they run:
-  - Swift in Xcode or your FountainAI template app.
-  - TypeScript with `tsc --noEmit` and a minimal harness if needed.
-  - Check links in `README.md` resolve and assets are present.
-- Keep snippets minimal, compilable, and referenced in the tutorial `README.md`.
+- Tests are mandatory. Every tutorial scaffold includes a SwiftPM test target and a minimal unit test.
+- Swift (SwiftPM):
+  - Run tests with `swift test` in each tutorial folder.
+  - Pattern: put pure logic in small functions (e.g., `greet()` in `Greeter.swift`) and test them via `@testable import <TargetName>`.
+  - Add new tests under `Tests/<TargetName>Tests/` and keep them fast and deterministic.
+- TypeScript examples:
+  - If adding TS code, include lightweight tests (e.g., Vitest/Jest) and run them via `npm test` in that tutorial subfolder.
+- Coverage: aim for 80%+ of added logic. Prefer testing behavior over implementation details.
+- Self-correction loop: write a failing test for each bug/feature, implement, then re-run `swift test` until green.
 
 ## Commit & Pull Request Guidelines
 - Use Conventional Commits (seen in history): `docs:`, `feat:`, `fix:`, `chore:`.

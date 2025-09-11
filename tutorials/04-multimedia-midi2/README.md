@@ -75,6 +75,12 @@ swift run
 
 Expected: Swift package builds successfully. The MIDI2 examples run in a browser or Node environment.
 
+## Run tests
+```bash
+swift test
+```
+Keep Swift tests focused on any local helpers; test TS code with your chosen runner (e.g., Vitest) in a separate step.
+
 ## Troubleshooting
 - AudioContext blocked: user gesture may be required before playback in some browsers.
 - Asset path: ensure `cue.mid` resolves (serve from `/assets/` or adjust `load()` path).

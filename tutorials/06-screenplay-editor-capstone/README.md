@@ -57,5 +57,11 @@ Tip (macOS app bundle): Inside the FountainAI monorepo, you can bundle with `Scr
 - MIDI not playing: verify `cue.mid` path and audio permissions.
 - AI errors: confirm `FOUNTAIN_AI_KEY`/`LLM_GATEWAY_URL` are set and reachable.
 
+## Run tests
+```bash
+swift test
+```
+Add tests for persistence helpers, cue timing calculations, and any model-formatting logic.
+
 ## Next steps
 Explore deeper integration in the upstream monorepo (Gateway plugins, persistence services) or extend the editor with scenes, formatting, and export.

@@ -55,6 +55,14 @@ swift run
 
 Expected: A window appears with “Welcome to Teatro” and a “Tap Me” button. Tapping the button prints “Button was tapped” in the console.
 
+## 5. Run tests
+Execute the unit tests:
+
+```bash
+swift test
+```
+Expected: Tests pass. Add tests for any helpers you extract from the UI logic.
+
 Tip (macOS app bundle): If you’re working inside the FountainAI monorepo, you can bundle a GUI target with `Scripts/make_app.sh <Name>` and open `dist/<Name>.app`.
 
 ## Troubleshooting

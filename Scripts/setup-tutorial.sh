@@ -58,48 +58,77 @@ let package = Package(
         .executableTarget(
             name: "$APP_NAME",
             path: ".",
-            sources: ["main.swift"]
+            sources: ["main.swift", "Greeter.swift"]
+        ),
+        .testTarget(
+            name: "${APP_NAME}Tests",
+            dependencies: ["$APP_NAME"],
+            path: "Tests/${APP_NAME}Tests"
         )
     ]
 )
 EOF
 
+  # Always ensure a Greeter for tests; harmless if unused by main
+  cat > "$TARGET_DIR/Greeter.swift" <<'SWIFT'
+import Foundation
+
+public func greet() -> String {
+    return "Hello, FountainAI!"
+}
+SWIFT
+
   if [[ ! -f "$MAIN_FILE" ]]; then
     cat > "$MAIN_FILE" <<'SWIFT'
 import Foundation
 
-print("Hello, FountainAI!")
+print(greet())
 SWIFT
   fi
+  mkdir -p "$TARGET_DIR/Tests/${APP_NAME}Tests"
+  cat > "$TARGET_DIR/Tests/${APP_NAME}Tests/${APP_NAME}Tests.swift" <<EOF
+import XCTest
+@testable import $APP_NAME
+
+final class ${APP_NAME}Tests: XCTestCase {
+    func testGreetReturnsHello() {
+        XCTAssertEqual(greet(), "Hello, FountainAI!")
+    }
+}
+EOF
   echo "Generated Package.swift and main.swift for $APP_NAME in $TARGET_DIR (local mode)"
 }
 
 attempt_upstream() {
-  local tmpdir; tmpdir="$(mktemp -d)"
+  local tmpdir
+  tmpdir="$(mktemp -d)"
   local repodir="$tmpdir/the-fountainai"
-  trap 'rm -rf "$tmpdir"' EXIT
+  # Ensure cleanup runs when this function returns (not on script exit)
+  trap "rm -rf '$tmpdir'" RETURN
   echo "Fetching FountainAI monorepo…"
   git clone --depth 1 https://github.com/Fountain-Coach/the-fountainai.git "$repodir" >/dev/null
-  echo "Scaffolding via upstream Scripts/new-gui-app.sh…"
-  set +e
-  if [[ -n "$BUNDLE_ID" ]]; then
-    ( cd "$repodir" && Scripts/new-gui-app.sh "$APP_NAME" "$BUNDLE_ID" )
-  else
-    ( cd "$repodir" && Scripts/new-gui-app.sh "$APP_NAME" )
+  echo "Building scaffold-cli (Swift) black-box…"
+  ( cd "$(dirname "$0")/../tools/scaffold-cli" && \
+    export CLANG_MODULE_CACHE_PATH="$PWD/.modulecache" && \
+    mkdir -p "$CLANG_MODULE_CACHE_PATH" && \
+    swift build -c release >/dev/null )
+  local cli="$(cd "$(dirname "$0")/../tools/scaffold-cli" && pwd)/.build/release/scaffold-cli"
+  if [[ ! -x "$cli" ]]; then
+    echo "Failed to build scaffold-cli. Falling back to local minimal package." >&2
+    return 1
   fi
-  local status=$?
-  set -e
-  if [[ $status -ne 0 ]]; then
-    echo "Upstream scaffolding failed (status $status). Falling back to local minimal package." >&2
+  echo "Scaffolding via scaffold-cli…"
+  if ! "$cli" --repo "$repodir" --app "$APP_NAME" ${BUNDLE_ID:+--bundle-id "$BUNDLE_ID"}; then
+    echo "scaffold-cli failed. Falling back to local minimal package." >&2
     return 1
   fi
   if [[ -f "$repodir/apps/$APP_NAME/main.swift" ]]; then
     cp "$repodir/apps/$APP_NAME/main.swift" "$MAIN_FILE"
-    echo "Copied generated main.swift from upstream."
+    echo "Copied generated main.swift from upstream scaffold."
   fi
   # Always use local minimal Package.swift for portability in this tutorial repo
   generate_local
-  echo "Prepared local package using upstream-generated main.swift."
+  echo "Prepared local package using scaffolded main.swift."
 }
 
 if [[ "$MODE" == "upstream" ]]; then

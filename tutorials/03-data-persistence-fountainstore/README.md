@@ -73,6 +73,12 @@ swift run
 
 Expected: The program runs without error. Add temporary `print(notes.count)` or `print(first.text)` statements to verify the data roundtrip locally.
 
+## Run tests
+```bash
+swift test
+```
+Add tests for save/load helpers and edge cases (empty file, corrupt JSON) as you expand functionality.
+
 ## Troubleshooting
 - Permission denied: `chmod +x setup.sh` and re-run.
 - Build errors: ensure Swift 6.1+ is installed; check `swift --version`.

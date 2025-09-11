@@ -80,5 +80,11 @@ swift run
 - Connection refused: ensure your local gateway is running and `LLM_GATEWAY_URL` is correct.
 - Model errors: list available models or confirm the `model` name expected by your gateway.
 
+## Run tests
+```bash
+swift test
+```
+Add tests that validate your request-building logic (headers, JSON encoding) and response parsing.
+
 ## Next steps
 Use the responses in your app to drive features like summarization, dialogue, or content generation.
