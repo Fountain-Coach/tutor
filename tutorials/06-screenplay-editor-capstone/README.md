@@ -12,7 +12,7 @@ Combine UI (Teatro), persistence (FountainStore), multimedia (MIDI2), and AI (Op
   ```
 
 ## Setup
-Run the setup script with the capstone profile to include AI, persistence, and MIDI2 libraries:
+By default this tutorial uses the `ai` profile. To include AI + persistence + MIDI2 libraries all together, use the `capstone` profile:
 
 ```bash
 ./setup.sh --profile capstone --upstream

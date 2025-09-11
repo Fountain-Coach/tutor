@@ -63,6 +63,7 @@ Use `--profile <name>` to include client libraries from the upstream FountainAI 
 Examples:
 - `./setup.sh --upstream --profile ai`
 - `./setup.sh --profile persist`
+- `./setup.sh --upstream --profile full-client`
 
 Profile quick map:
 

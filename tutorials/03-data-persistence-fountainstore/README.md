@@ -12,7 +12,7 @@ Persist simple data using **FountainStore** within a minimal SPM app. This tutor
   ```
 
 ## 1. Scaffold the project
-Run the setup script with the persistence profile to include FountainAI persistence libraries:
+By default this tutorial uses the `ai` profile for client libraries. To include persistence libraries, run with the persistence profile:
 
 ```bash
 ./setup.sh --profile persist --upstream

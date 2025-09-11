@@ -12,7 +12,7 @@ Play audio and synchronize your UI using MIDI 2.0 timing. This lesson shows Type
   ```
 
 ## Scaffold the project
-Run the setup script with the MIDI2 profile if you plan to use Swift MIDI2 libraries locally:
+By default this tutorial uses the `ai` profile. If you plan to use Swift MIDI2 libraries locally, run with the `midi2` profile:
 
 ```bash
 ./setup.sh --profile midi2 --upstream

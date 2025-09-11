@@ -9,7 +9,7 @@ Call FountainAI’s OpenAPI endpoints from any HTTP client. This tutorial focuse
 - Ensure you have an API key or local gateway token.
 
 ## 1. Scaffold the project
-Run the setup script with the AI profile to include FountainAI client libraries:
+This tutorial uses the `ai` profile by default to include FountainAI client libraries. To be explicit or to regenerate:
 
 ```bash
 ./setup.sh --profile ai --upstream

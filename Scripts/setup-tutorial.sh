@@ -92,7 +92,16 @@ generate_local() {
         TARGET_DEPS+=(".product(name: \"SemanticBrowserAPI\", package: \"the-fountainai\")")
         ;;
     esac
-    JOINED_DEPS=$(printf ",\n                %s" "${TARGET_DEPS[@]}")
+    # Join without leading comma
+    DEPS_JOINED=""
+    for dep in "${TARGET_DEPS[@]}"; do
+      if [[ -z "$DEPS_JOINED" ]]; then
+        DEPS_JOINED="$dep"
+      else
+        DEPS_JOINED="$DEPS_JOINED,\n                $dep"
+      fi
+    done
+
     cat > "$PKG_FILE" <<EOF
 // swift-tools-version: 6.1
 import PackageDescription
@@ -100,18 +109,18 @@ import PackageDescription
 let package = Package(
     name: "$APP_NAME",
     platforms: [ .macOS(.v14) ],
-    dependencies: [
-        .package(url: "https://github.com/Fountain-Coach/the-fountainai.git", branch: "main")
-    ],
     products: [
         .executable(name: "$APP_NAME", targets: ["$APP_NAME"])
+    ],
+    dependencies: [
+        .package(url: "https://github.com/Fountain-Coach/the-fountainai.git", branch: "main")
     ],
     targets: [
         .executableTarget(
             name: "$APP_NAME",
+            dependencies: [$DEPS_JOINED],
             path: ".",
-            sources: ["main.swift", "Greeter.swift"],
-            dependencies: [${JOINED_DEPS#",\n                "}]
+            sources: ["main.swift", "Greeter.swift"]
         ),
         .testTarget(
             name: "${APP_NAME}Tests",
