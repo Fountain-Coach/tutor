@@ -47,3 +47,28 @@ Expected: the app prints a greeting in the terminal. Open the project in Xcode w
 - [04 – Multimedia with MIDI2](tutorials/04-multimedia-midi2/README.md)
 - [05 – AI Integration with OpenAPI](tutorials/05-ai-integration-openapi/README.md)
 - [06 – Screenplay Editor Capstone](tutorials/06-screenplay-editor-capstone/README.md)
+## Profiles (Optional)
+
+Use `--profile <name>` to include client libraries from the upstream FountainAI package:
+
+- `basic` (default): minimal app scaffold
+- `ai`: + `FountainAICore`, `FountainAIAdapters`, `LLMGatewayAPI`
+- `persist`: + `PersistAPI`, `FountainStoreClient` (plus core/adapters)
+- `midi2`: + `MIDI2Models`, `MIDI2Core`, `SSEOverMIDI`, `FlexBridge`
+- `capstone`: union of `ai` + `persist` + `midi2`
+- `full-client`: all client APIs (`GatewayAPI`, `LLMGatewayAPI`, `PersistAPI`, `SemanticBrowserAPI`) plus core/adapters
+
+Examples:
+- `./setup.sh --upstream --profile ai`
+- `./setup.sh --profile persist`
+
+Profile quick map:
+
+| Profile      | Modules |
+|--------------|---------|
+| `basic`      | (none) |
+| `ai`         | `FountainAICore`, `FountainAIAdapters`, `LLMGatewayAPI` |
+| `persist`    | `PersistAPI`, `FountainStoreClient` (+ core/adapters) |
+| `midi2`      | `MIDI2Models`, `MIDI2Core`, `SSEOverMIDI`, `FlexBridge` |
+| `capstone`   | union of `ai` + `persist` + `midi2` |
+| `full-client`| `GatewayAPI`, `LLMGatewayAPI`, `PersistAPI`, `SemanticBrowserAPI` (+ core/adapters) |

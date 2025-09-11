@@ -9,10 +9,10 @@ Call FountainAI’s OpenAPI endpoints from any HTTP client. This tutorial focuse
 - Ensure you have an API key or local gateway token.
 
 ## 1. Scaffold the project
-Run the setup script, which generates a minimal local Swift package in this folder:
+Run the setup script with the AI profile to include FountainAI client libraries:
 
 ```bash
-./setup.sh
+./setup.sh --profile ai --upstream
 ```
 
 Advanced: `./setup.sh --upstream` (or `SETUP_MODE=upstream ./setup.sh`) attempts to scaffold via the upstream monorepo and copy its generated files here; falls back to local if it fails.

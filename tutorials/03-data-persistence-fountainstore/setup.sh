@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 # Usage: ./setup.sh [BundleID]
-../../Scripts/setup-tutorial.sh FountainStore "$@"
+../../Scripts/setup-tutorial.sh --profile persist FountainStore "$@"

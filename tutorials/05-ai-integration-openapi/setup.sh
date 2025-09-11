@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 # Usage: ./setup.sh [BundleID]
-../../Scripts/setup-tutorial.sh OpenAPI "$@"
+../../Scripts/setup-tutorial.sh --profile ai OpenAPI "$@"

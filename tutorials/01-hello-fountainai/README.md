@@ -92,7 +92,7 @@ xed .
 - Outputs: creates/overwrites those two files in this folder.
 - Re-running: safe; it will overwrite the files. Delete them to reset.
 
-Advanced: `./setup.sh --upstream` (or `SETUP_MODE=upstream ./setup.sh`) uses a Swift-based scaffolder (no awk) to scaffold in the upstream monorepo and copy its generated `main.swift` here; if the build or network is blocked, it automatically falls back to the local minimal package.
+Advanced: `./setup.sh --upstream` (or `SETUP_MODE=upstream ./setup.sh`) uses a Swift-based scaffolder (no awk) to scaffold in the upstream monorepo, then generates a local Package.swift that depends on the upstream FountainAI package so imports like `FountainAICore`, `FountainAIAdapters`, and `LLMGatewayAPI` resolve. If the build or network is blocked, it automatically falls back to the local minimal package.
 
 ## 3. Build and run
 Build the project and launch it locally:

@@ -85,9 +85,10 @@ func ensureScaffold(repo: String, app: String) throws {
     let mainPath = repo + "/apps/\(app)/main.swift"
     if !FileManager.default.fileExists(atPath: mainPath) {
         let main = """
-        import SwiftUI
-        import FountainAICore
-        import FountainAIAdapters
+import SwiftUI
+import FountainAICore
+import FountainAIAdapters
+import LLMGatewayAPI
 
         @main
         struct AppEntry: App {
@@ -139,17 +140,20 @@ func ensureScaffold(repo: String, app: String) throws {
     }
 }
 
-let args = parseArgs()
-guard !args.repo.isEmpty, !args.app.isEmpty else {
-    fputs("Missing required args. Usage: scaffold-cli --repo <path> --app <Name> [--bundle-id <id>]\n", stderr)
-    exit(2)
+@main
+struct Runner {
+    static func main() {
+        let args = parseArgs()
+        guard !args.repo.isEmpty, !args.app.isEmpty else {
+            fputs("Missing required args. Usage: scaffold-cli --repo <path> --app <Name> [--bundle-id <id>]\n", stderr)
+            exit(2)
+        }
+        do {
+            try ensureScaffold(repo: args.repo, app: args.app)
+            print("Scaffolded in repo: \(args.repo), app: \(args.app)")
+        } catch {
+            fputs("Error: \(error)\n", stderr)
+            exit(1)
+        }
+    }
 }
-
-do {
-    try ensureScaffold(repo: args.repo, app: args.app)
-    print("Scaffolded in repo: \(args.repo), app: \(args.app)")
-} catch {
-    fputs("Error: \(error)\n", stderr)
-    exit(1)
-}
-

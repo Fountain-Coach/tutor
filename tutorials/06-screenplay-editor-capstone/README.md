@@ -12,10 +12,10 @@ Combine UI (Teatro), persistence (FountainStore), multimedia (MIDI2), and AI (Op
   ```
 
 ## Setup
-Run the setup script, which generates a minimal local Swift package in this folder:
+Run the setup script with the capstone profile to include AI, persistence, and MIDI2 libraries:
 
 ```bash
-./setup.sh
+./setup.sh --profile capstone --upstream
 ```
 
 Advanced: `./setup.sh --upstream` (or `SETUP_MODE=upstream ./setup.sh`) attempts to scaffold via the upstream monorepo and copy its generated files here; falls back to local if it fails.

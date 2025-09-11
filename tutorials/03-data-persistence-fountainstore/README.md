@@ -12,10 +12,10 @@ Persist simple data using **FountainStore** within a minimal SPM app. This tutor
   ```
 
 ## 1. Scaffold the project
-Run the setup script, which generates a minimal local Swift package in this folder:
+Run the setup script with the persistence profile to include FountainAI persistence libraries:
 
 ```bash
-./setup.sh
+./setup.sh --profile persist --upstream
 ```
 
 Advanced: `./setup.sh --upstream` (or `SETUP_MODE=upstream ./setup.sh`) attempts to scaffold via the upstream monorepo and copy its generated files here; falls back to local if it fails.

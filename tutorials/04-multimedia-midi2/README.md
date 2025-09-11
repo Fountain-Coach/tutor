@@ -12,10 +12,10 @@ Play audio and synchronize your UI using MIDI 2.0 timing. This lesson shows Type
   ```
 
 ## Scaffold the project
-Run the setup script, which generates a minimal local Swift package in this folder:
+Run the setup script with the MIDI2 profile if you plan to use Swift MIDI2 libraries locally:
 
 ```bash
-./setup.sh
+./setup.sh --profile midi2 --upstream
 ```
 
 Advanced: `./setup.sh --upstream` (or `SETUP_MODE=upstream ./setup.sh`) attempts to scaffold via the upstream monorepo and copy its generated files here; falls back to local if it fails.
