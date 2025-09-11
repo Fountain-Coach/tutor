@@ -85,10 +85,10 @@ func ensureScaffold(repo: String, app: String) throws {
     let mainPath = repo + "/apps/\(app)/main.swift"
     if !FileManager.default.fileExists(atPath: mainPath) {
         let main = """
-import SwiftUI
-import FountainAICore
-import FountainAIAdapters
-import LLMGatewayAPI
+        import SwiftUI
+        import FountainAICore
+        import FountainAIAdapters
+        import LLMGatewayAPI
 
         @main
         struct AppEntry: App {
