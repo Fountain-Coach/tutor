@@ -1,26 +1,26 @@
 # 01 – Hello FountainAI
 
-Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the FountainAI monorepo; build and run locally to explore the concept.
+Imagine stepping onto a small stage where code takes the spotlight. FountainAI treats every request like a play: OpenAPI “scripts” set the dialogue, Swift services work the lights, and apps deliver the final line. In this opening lesson you’ll raise the curtain with a single‑line performance that proves your toolchain is ready.
 
-FountainAI is a Swift monorepo that treats every request like a theatre play: OpenAPI “scripts” define contracts, Swift “stage crew” services enforce them, and apps are the audience-facing experience. This first tutorial is a minimal onramp: it scaffolds a tiny Hello app to verify your toolchain and the template workflow. It does not run the full Gateway or services.
+Rather than build everything from scratch, the `setup.sh` script slips you a prepared script—a minimal Swift package you can build, run, and quickly make your own.
 
-## FountainAI in One Glance
-- OpenAPI contracts: `openapi/` drives the platform’s personas and policies (gateway, auth, rate limit, security, persistence).
-- Core services: `services/GatewayServer` (pluggable gateway) and `services/PersistServer` (FountainStore persistence).
-- App scaffolding: `Scripts/new-gui-app.sh <Name>` creates a SwiftUI target in `apps/<Name>`; `Scripts/make_app.sh <Name>` bundles a `.app`.
-- This repo: tutorials only. Local `setup.sh` wraps the monorepo scripts and copies the generated `main.swift` and `Package.swift` here for a minimal SPM app.
+## FountainAI In One Glance
+- **Scripts** – `openapi/` holds contracts that shape personas, policies, and security cues.
+- **Stage Crew** – `services/GatewayServer` and `services/PersistServer` keep the production running.
+- **Scaffolding** – `Scripts/new-gui-app.sh <Name>` spins up SwiftUI targets, while `Scripts/make_app.sh <Name>` bundles a `.app`.
+- **This Repo** – houses tutorials only; `setup.sh` wraps the monorepo scripts to create a tiny SwiftPM app with `main.swift` and `Package.swift`.
 
 ## Learning outcomes
 
-By completing this tutorial, you will:
+By the end you will:
 
-- Confirm that Swift and Git are installed and ready to use
-- Scaffold a Hello FountainAI app from the official template
-- Build and run the app locally, then customize its greeting
+- Confirm that Swift and Git are show‑ready
+- Summon a Hello FountainAI app from the official template
+- Build, run, and personalize its greeting
 
 ## Prerequisites
 
-To follow this tutorial you'll need:
+Gather your tools before the curtain rises:
 
 - **Swift 6.1+** – verify it is available:
   ```bash
@@ -41,7 +41,7 @@ To follow this tutorial you'll need:
 
 On macOS you may need to install the Xcode command line tools with `xcode-select --install`. Linux users should install a Swift 6.1 toolchain along with required system libraries such as `clang` and `libicu`. SwiftUI features from the template currently work only on macOS, so the generated code runs as a command-line app on Linux.
 
-Follow these steps to spin up a minimal FountainAI app.
+With your props assembled, you're ready to bring a minimal FountainAI app to life.
 
 ## Before you begin
 
