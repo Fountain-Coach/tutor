@@ -2,13 +2,13 @@
 import PackageDescription
 
 let package = Package(
-    name: "ScaffoldCLI",
+    name: "TutorCLI",
     platforms: [ .macOS(.v14) ],
     products: [
-        .executable(name: "scaffold-cli", targets: ["ScaffoldCLI"])
+        .executable(name: "tutor-cli", targets: ["TutorCLI"])
     ],
     targets: [
-        .executableTarget(name: "ScaffoldCLI")
+        .executableTarget(name: "TutorCLI")
     ]
 )
 

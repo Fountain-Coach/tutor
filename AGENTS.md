@@ -11,9 +11,11 @@
   - `./setup.sh` — scaffold a SwiftPM app (AI UI by default).
   - `./setup.sh --upstream` — use Swift-based upstream scaffolder and generate a local package linked to FountainAI.
   - `./setup.sh --profile <name>` — include FountainAI client libraries by profile (`basic`, `ai`, `persist`, `midi2`, `capstone`, `full-client`).
-  - `./build.sh` — compile (preferred; sets local caches for macOS).
-  - `./run.sh` — run the app without Xcode (preferred).
-  - `./test.sh` — run unit tests (required).
+  - Build Tutor CLI: `cd tools/tutor-cli && swift build -c release`.
+  - From a tutorial folder, use the Swift CLI (preferred over shell scripts):
+    - `../../tools/tutor-cli/.build/release/tutor-cli build`
+    - `../../tools/tutor-cli/.build/release/tutor-cli run`
+    - `../../tools/tutor-cli/.build/release/tutor-cli test`
 - CI: GitHub Actions workflow (`.github/workflows/swift-ci.yml`) runs setup, build, and tests for all tutorials on PRs.
 
 ## Coding Style & Naming Conventions

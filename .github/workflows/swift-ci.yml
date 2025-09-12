@@ -26,6 +26,11 @@ jobs:
       - name: Show Swift version
         run: swift --version
 
+      - name: Build Tutor CLI
+        run: |
+          cd tools/tutor-cli
+          swift build -c release
+
       - name: Setup tutorial scaffold
         working-directory: tutorials/${{ matrix.tutorial }}
         run: |
@@ -33,10 +38,7 @@ jobs:
           ./setup.sh
 
       - name: Build
-        working-directory: tutorials/${{ matrix.tutorial }}
-        run: swift build
+        run: make -C tutorials/${{ matrix.tutorial }} build
 
       - name: Test
-        working-directory: tutorials/${{ matrix.tutorial }}
-        run: swift test
-
+        run: make -C tutorials/${{ matrix.tutorial }} test

@@ -1,6 +1,6 @@
 # FountainAI Tutorial Series
 
-Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the FountainAI monorepo; build and run locally to explore the concept.
+Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the FountainAI monorepo; build and run locally using the Swift-powered `tutor-cli` (no Xcode required).
 
 [![Swift Tutorials CI](https://github.com/Fountain-Coach/tutor/actions/workflows/swift-ci.yml/badge.svg)](https://github.com/Fountain-Coach/tutor/actions/workflows/swift-ci.yml)
 
@@ -20,7 +20,12 @@ Deep knowledge: See docs/dependency-management-deep-dive.md for how profiles map
 2. Change into a tutorial: `cd tutorials/01-hello-fountainai`
 3. Make the script executable if needed: `chmod +x setup.sh`
 4. Scaffold the app: `./setup.sh`
-5. Build and run: `./build.sh && ./run.sh`
+5. Build the CLI once: `cd tools/tutor-cli && swift build -c release`
+6. Build and run the app from the tutorial folder:
+   - `../../tools/tutor-cli/.build/release/tutor-cli build`
+   - `../../tools/tutor-cli/.build/release/tutor-cli run`
+
+More on the CLI: see docs/tutor-cli.md
 
 Expected: the app prints a greeting in the terminal. Open the project in Xcode with `xed .` if you prefer a GUI.
 
@@ -64,6 +69,11 @@ Examples:
 - `./setup.sh --upstream --profile ai`
 - `./setup.sh --profile persist`
 - `./setup.sh --upstream --profile full-client`
+
+CLI equivalents (from a tutorial folder):
+- `../../tools/tutor-cli/.build/release/tutor-cli build`
+- `../../tools/tutor-cli/.build/release/tutor-cli run`
+- `../../tools/tutor-cli/.build/release/tutor-cli test`
 
 Profile quick map:
 

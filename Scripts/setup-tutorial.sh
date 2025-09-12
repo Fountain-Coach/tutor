@@ -255,6 +255,21 @@ swift test --disable-sandbox \
   -Xswiftc -module-cache-path -Xswiftc "$PWD/.swift-module-cache" "$@"
 BASH
   chmod +x "$TARGET_DIR/build.sh" "$TARGET_DIR/run.sh" "$TARGET_DIR/test.sh"
+  # Makefile shim using tutor-cli
+  cat > "$TARGET_DIR/Makefile" <<'MAKE'
+CLI=../../tools/tutor-cli/.build/release/tutor-cli
+
+.PHONY: build run test
+
+build:
+	$(CLI) build
+
+run:
+	$(CLI) run
+
+test:
+	$(CLI) test
+MAKE
   echo "Generated Package.swift and main.swift for $APP_NAME in $TARGET_DIR (local mode)"
 }
 
@@ -265,24 +280,24 @@ attempt_upstream() {
   cleanup() { rm -rf "$tmpdir"; }
   echo "Fetching FountainAI monorepo…"
   git clone --depth 1 https://github.com/Fountain-Coach/the-fountainai.git "$repodir" >/dev/null
-  echo "Attempting Swift-based scaffold (scaffold-cli)…"
+  echo "Attempting Swift-based scaffold (tutor-cli)…"
   (
-    cd "$(dirname "$0")/../tools/scaffold-cli" && \
+    cd "$(dirname "$0")/../tools/tutor-cli" && \
     export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}" && \
     export SDKROOT="${SDKROOT:-$(xcrun --sdk macosx --show-sdk-path 2>/dev/null || true)}" && \
     export CLANG_MODULE_CACHE_PATH="$PWD/.modulecache" && mkdir -p "$CLANG_MODULE_CACHE_PATH" && \
-    swift run -c release scaffold-cli \
+    swift run -c release tutor-cli scaffold \
       -Xcc -fmodules-cache-path=$PWD/.modulecache \
       -Xswiftc -module-cache-path -Xswiftc $PWD/.swift-module-cache \
       --repo "$repodir" --app "$APP_NAME" ${BUNDLE_ID:+--bundle-id "$BUNDLE_ID"}
   ) || (
     # Fallback: build ad-hoc with swiftc to avoid SwiftPM manifest compilation
     echo "swift run failed; attempting direct swiftc build…" >&2; \
-    cd "$(dirname "$0")/../tools/scaffold-cli" && \
+    cd "$(dirname "$0")/../tools/tutor-cli" && \
     export SDKROOT="${SDKROOT:-$(xcrun --sdk macosx --show-sdk-path 2>/dev/null || true)}" && \
     mkdir -p .build && \
-    swiftc Sources/ScaffoldCLI/main.swift -o .build/scaffold-cli 2>/dev/null && \
-    ./.build/scaffold-cli --repo "$repodir" --app "$APP_NAME" ${BUNDLE_ID:+--bundle-id "$BUNDLE_ID"}
+    swiftc Sources/TutorCLI/main.swift -o .build/tutor-cli 2>/dev/null && \
+    ./.build/tutor-cli scaffold --repo "$repodir" --app "$APP_NAME" ${BUNDLE_ID:+--bundle-id "$BUNDLE_ID"}
   ) && {
   if [[ -f "$repodir/apps/$APP_NAME/main.swift" ]]; then
     mkdir -p "$SRC_DIR"

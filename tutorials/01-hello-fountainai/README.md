@@ -98,8 +98,8 @@ Advanced: `./setup.sh --upstream` (or `SETUP_MODE=upstream ./setup.sh`) uses a S
 Build the project and launch it locally:
 
 ```bash
-./build.sh
-./run.sh
+../../tools/tutor-cli/.build/release/tutor-cli build
+../../tools/tutor-cli/.build/release/tutor-cli run
 ```
 
 When the app starts successfully, the console prints a friendly greeting:
@@ -115,7 +115,7 @@ Hello, FountainAI!
 Execute the unit tests:
 
 ```bash
-./test.sh
+../../tools/tutor-cli/.build/release/tutor-cli test
 ```
 Expected: Tests pass (e.g., `testGreetReturnsHello`).
 
