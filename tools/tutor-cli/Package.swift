@@ -5,10 +5,9 @@ let package = Package(
     name: "TutorCLI",
     platforms: [ .macOS(.v14) ],
     products: [
-        .executable(name: "tutor-cli", targets: ["TutorCLI"])
+        .executable(name: "tutor", targets: ["TutorCLI"])
     ],
     targets: [
         .executableTarget(name: "TutorCLI")
     ]
 )
-

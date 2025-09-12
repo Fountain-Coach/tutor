@@ -226,50 +226,7 @@ final class ${APP_NAME}Tests: XCTestCase {
     }
 }
 EOF
-  # Build/Test wrappers to avoid module cache permission issues
-  cat > "$TARGET_DIR/build.sh" <<'BASH'
-#!/usr/bin/env bash
-set -euo pipefail
-export CLANG_MODULE_CACHE_PATH="${CLANG_MODULE_CACHE_PATH:-$PWD/.modulecache}"
-mkdir -p "$CLANG_MODULE_CACHE_PATH" "$PWD/.swift-module-cache"
-swift build --disable-sandbox \
-  -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE_PATH" \
-  -Xswiftc -module-cache-path -Xswiftc "$PWD/.swift-module-cache" "$@"
-BASH
-  cat > "$TARGET_DIR/run.sh" <<'BASH'
-#!/usr/bin/env bash
-set -euo pipefail
-export CLANG_MODULE_CACHE_PATH="${CLANG_MODULE_CACHE_PATH:-$PWD/.modulecache}"
-mkdir -p "$CLANG_MODULE_CACHE_PATH" "$PWD/.swift-module-cache"
-swift run --disable-sandbox \
-  -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE_PATH" \
-  -Xswiftc -module-cache-path -Xswiftc "$PWD/.swift-module-cache" "$@"
-BASH
-  cat > "$TARGET_DIR/test.sh" <<'BASH'
-#!/usr/bin/env bash
-set -euo pipefail
-export CLANG_MODULE_CACHE_PATH="${CLANG_MODULE_CACHE_PATH:-$PWD/.modulecache}"
-mkdir -p "$CLANG_MODULE_CACHE_PATH" "$PWD/.swift-module-cache"
-swift test --disable-sandbox \
-  -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE_PATH" \
-  -Xswiftc -module-cache-path -Xswiftc "$PWD/.swift-module-cache" "$@"
-BASH
-  chmod +x "$TARGET_DIR/build.sh" "$TARGET_DIR/run.sh" "$TARGET_DIR/test.sh"
-  # Makefile shim using tutor-cli
-  cat > "$TARGET_DIR/Makefile" <<'MAKE'
-CLI=../../tools/tutor-cli/.build/release/tutor-cli
-
-.PHONY: build run test
-
-build:
-	$(CLI) build
-
-run:
-	$(CLI) run
-
-test:
-	$(CLI) test
-MAKE
+  # No shell shims or Makefiles; use the Swift Tutor CLI (see docs/tutor-cli.md).
   echo "Generated Package.swift and main.swift for $APP_NAME in $TARGET_DIR (local mode)"
 }
 
@@ -280,13 +237,13 @@ attempt_upstream() {
   cleanup() { rm -rf "$tmpdir"; }
   echo "Fetching FountainAI monorepo…"
   git clone --depth 1 https://github.com/Fountain-Coach/the-fountainai.git "$repodir" >/dev/null
-  echo "Attempting Swift-based scaffold (tutor-cli)…"
+  echo "Attempting Swift-based scaffold (tutor)…"
   (
     cd "$(dirname "$0")/../tools/tutor-cli" && \
     export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}" && \
     export SDKROOT="${SDKROOT:-$(xcrun --sdk macosx --show-sdk-path 2>/dev/null || true)}" && \
     export CLANG_MODULE_CACHE_PATH="$PWD/.modulecache" && mkdir -p "$CLANG_MODULE_CACHE_PATH" && \
-    swift run -c release tutor-cli scaffold \
+    swift run -c release tutor scaffold \
       -Xcc -fmodules-cache-path=$PWD/.modulecache \
       -Xswiftc -module-cache-path -Xswiftc $PWD/.swift-module-cache \
       --repo "$repodir" --app "$APP_NAME" ${BUNDLE_ID:+--bundle-id "$BUNDLE_ID"}
@@ -296,8 +253,8 @@ attempt_upstream() {
     cd "$(dirname "$0")/../tools/tutor-cli" && \
     export SDKROOT="${SDKROOT:-$(xcrun --sdk macosx --show-sdk-path 2>/dev/null || true)}" && \
     mkdir -p .build && \
-    swiftc Sources/TutorCLI/main.swift -o .build/tutor-cli 2>/dev/null && \
-    ./.build/tutor-cli scaffold --repo "$repodir" --app "$APP_NAME" ${BUNDLE_ID:+--bundle-id "$BUNDLE_ID"}
+    swiftc Sources/TutorCLI/main.swift -o .build/tutor 2>/dev/null && \
+    ./.build/tutor scaffold --repo "$repodir" --app "$APP_NAME" ${BUNDLE_ID:+--bundle-id "$BUNDLE_ID"}
   ) && {
   if [[ -f "$repodir/apps/$APP_NAME/main.swift" ]]; then
     mkdir -p "$SRC_DIR"

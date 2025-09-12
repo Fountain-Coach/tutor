@@ -20,12 +20,12 @@ Deep knowledge: See docs/dependency-management-deep-dive.md for how profiles map
 2. Change into a tutorial: `cd tutorials/01-hello-fountainai`
 3. Make the script executable if needed: `chmod +x setup.sh`
 4. Scaffold the app: `./setup.sh`
-5. Build the CLI once: `cd tools/tutor-cli && swift build -c release`
+5. Install the CLI (one time): `Scripts/install-tutor.sh` (installs to `~/.local/bin/tutor`). Or build then self-install: `cd tools/tutor-cli && swift build -c release && .build/release/tutor install`.
 6. Build and run the app from the tutorial folder:
-   - `../../tools/tutor-cli/.build/release/tutor-cli build`
-   - `../../tools/tutor-cli/.build/release/tutor-cli run`
+   - `tutor build`
+   - `tutor run`
 
-More on the CLI: see docs/tutor-cli.md
+More on the CLI: see docs/tutor-cli.md. Use `tutor --help` anytime.
 
 Expected: the app prints a greeting in the terminal. Open the project in Xcode with `xed .` if you prefer a GUI.
 
@@ -71,9 +71,9 @@ Examples:
 - `./setup.sh --upstream --profile full-client`
 
 CLI equivalents (from a tutorial folder):
-- `../../tools/tutor-cli/.build/release/tutor-cli build`
-- `../../tools/tutor-cli/.build/release/tutor-cli run`
-- `../../tools/tutor-cli/.build/release/tutor-cli test`
+- `tutor build`
+- `tutor run`
+- `tutor test`
 
 Profile quick map:
 

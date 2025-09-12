@@ -1,16 +1,17 @@
 import Foundation
 
 struct CLI {
-    enum Command: String { case scaffold, build, run, test, help }
+    enum Command: String { case scaffold, build, run, test, install, help }
 }
 
 @main
 struct TutorCLI {
     static func main() async {
         let args = Array(CommandLine.arguments.dropFirst())
-        guard let cmdString = args.first, let cmd = CLI.Command(rawValue: cmdString) else {
+        if args.first == "-h" || args.first == "--help" || args.isEmpty {
             printUsage(); return
         }
+        guard let cmdString = args.first, let cmd = CLI.Command(rawValue: cmdString) else { printUsage(); return }
         var rest = Array(args.dropFirst())
         switch cmd {
         case .scaffold:
@@ -21,6 +22,8 @@ struct TutorCLI {
             runSwift(cmd: "run", args: &rest)
         case .test:
             runSwift(cmd: "test", args: &rest)
+        case .install:
+            runInstall(args: &rest)
         case .help:
             printUsage()
         }
@@ -28,7 +31,7 @@ struct TutorCLI {
 
     static func printUsage() {
         let usage = """
-        tutor-cli <command> [options]
+        tutor <command> [options]
 
         Commands:
           scaffold   --repo <path> --app <Name> [--bundle-id <id>]
@@ -37,10 +40,10 @@ struct TutorCLI {
           test       [--dir <path>] [-- <swift test args>]
 
         Examples:
-          tutor-cli build --dir tutorials/01-hello-fountainai
-          tutor-cli run --dir tutorials/01-hello-fountainai
-          tutor-cli test --dir tutorials/01-hello-fountainai
-          tutor-cli scaffold --repo /path/to/the-fountainai --app HelloFountainAI
+          tutor build --dir tutorials/01-hello-fountainai
+          tutor run --dir tutorials/01-hello-fountainai
+          tutor test --dir tutorials/01-hello-fountainai
+          tutor scaffold --repo /path/to/the-fountainai --app HelloFountainAI
         """
         print(usage)
     }
@@ -72,6 +75,23 @@ struct TutorCLI {
         procArgs.append(contentsOf: pass)
         let code = runProcess(launchPath: "/usr/bin/swift", args: procArgs, cwd: dir)
         if code != 0 { exit(Int32(code)) }
+    }
+
+    static func runInstall(args: inout [String]) {
+        var binDir = (NSHomeDirectory() as NSString).appendingPathComponent(".local/bin")
+        if let idx = args.firstIndex(of: "--bin-dir"), idx + 1 < args.count { binDir = args[idx+1] }
+        let fm = FileManager.default
+        try? fm.createDirectory(atPath: binDir, withIntermediateDirectories: true)
+        let selfPath = (CommandLine.arguments.first!).hasPrefix("/") ? CommandLine.arguments.first! : URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent(CommandLine.arguments.first!).path
+        let target = (binDir as NSString).appendingPathComponent("tutor")
+        do {
+            if fm.fileExists(atPath: target) { try? fm.removeItem(atPath: target) }
+            try fm.copyItem(atPath: selfPath, toPath: target)
+            print("Installed tutor to \(target)\nAdd to PATH if needed: export PATH=\(binDir):$PATH")
+        } catch {
+            fputs("Install failed: \(error)\n", stderr)
+            exit(1)
+        }
     }
 
     static func runScaffold(args: inout [String]) async {
@@ -200,4 +220,3 @@ func ensureScaffold(repo: String, app: String) throws {
         try writeFile(mainPath, main)
     }
 }
-

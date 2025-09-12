@@ -2,19 +2,26 @@
 
 A small Swift command-line tool to scaffold, build, run, and test tutorials without Xcode.
 
-## Build
+## Install
 
-- Build once:
-  - `cd tools/tutor-cli && swift build -c release`
-- Binary path:
-  - `tools/tutor-cli/.build/release/tutor-cli`
+- One‑time install to `~/.local/bin/tutor`:
+  - `Scripts/install-tutor.sh`
+- Ensure `~/.local/bin` is on your PATH:
+  - `export PATH=$HOME/.local/bin:$PATH`
+
+Or install via the CLI itself (after building it once):
+
+- `cd tools/tutor-cli && swift build -c release && .build/release/tutor install`
 
 ## Usage
 
 - From any tutorial folder:
-  - Build: `../../tools/tutor-cli/.build/release/tutor-cli build`
-  - Run: `../../tools/tutor-cli/.build/release/tutor-cli run`
-  - Test: `../../tools/tutor-cli/.build/release/tutor-cli test`
+  - Build: `tutor build`
+  - Run: `tutor run`
+  - Test: `tutor test`
+- Help:
+  - `tutor --help`
+  - `tutor help`
 - Options:
   - `--dir <path>` to target a different folder
   - `--` to pass flags to underlying `swift` (e.g., `-- -c release`)
@@ -22,7 +29,7 @@ A small Swift command-line tool to scaffold, build, run, and test tutorials with
 ## Scaffold (advanced)
 
 - Scaffold an app target inside a cloned FountainAI monorepo (used by `setup.sh --upstream`):
-  - `../../tools/tutor-cli/.build/release/tutor-cli scaffold --repo /path/to/the-fountainai --app HelloFountainAI`
+  - `tutor scaffold --repo /path/to/the-fountainai --app HelloFountainAI`
 
 ## Environment
 
@@ -34,5 +41,5 @@ A small Swift command-line tool to scaffold, build, run, and test tutorials with
 
 ## Notes
 
-- The CLI is preferred over shell wrappers. Profiles in `setup.sh` still control which FountainAI products your app depends on.
+- The CLI is preferred. Profiles in `setup.sh` still control which FountainAI products your app depends on.
 - See also: `docs/dependency-management-deep-dive.md` for profiles and SwiftPM behavior.

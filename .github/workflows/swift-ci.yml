@@ -38,7 +38,7 @@ jobs:
           ./setup.sh
 
       - name: Build
-        run: make -C tutorials/${{ matrix.tutorial }} build
+        run: tools/tutor-cli/.build/release/tutor build --dir tutorials/${{ matrix.tutorial }}
 
       - name: Test
-        run: make -C tutorials/${{ matrix.tutorial }} test
+        run: tools/tutor-cli/.build/release/tutor test --dir tutorials/${{ matrix.tutorial }}
