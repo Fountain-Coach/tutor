@@ -45,7 +45,7 @@ Compile and launch the project:
 
 ```bash
 ./build.sh
-swift run
+./run.sh
 ```
 
 Expected: The GUI shows a main scene with buttons to save notes, play a cue, and request AI help. Console logs reflect events and actions.

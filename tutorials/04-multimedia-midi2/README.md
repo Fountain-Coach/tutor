@@ -70,7 +70,7 @@ Compile and launch the minimal Swift package (for structure only):
 
 ```bash
 ./build.sh
-swift run
+./run.sh
 ```
 
 Expected: Swift package builds successfully. The MIDI2 examples run in a browser or Node environment.

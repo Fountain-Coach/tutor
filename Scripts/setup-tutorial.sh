@@ -236,6 +236,15 @@ swift build --disable-sandbox \
   -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE_PATH" \
   -Xswiftc -module-cache-path -Xswiftc "$PWD/.swift-module-cache" "$@"
 BASH
+  cat > "$TARGET_DIR/run.sh" <<'BASH'
+#!/usr/bin/env bash
+set -euo pipefail
+export CLANG_MODULE_CACHE_PATH="${CLANG_MODULE_CACHE_PATH:-$PWD/.modulecache}"
+mkdir -p "$CLANG_MODULE_CACHE_PATH" "$PWD/.swift-module-cache"
+swift run --disable-sandbox \
+  -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE_PATH" \
+  -Xswiftc -module-cache-path -Xswiftc "$PWD/.swift-module-cache" "$@"
+BASH
   cat > "$TARGET_DIR/test.sh" <<'BASH'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -245,7 +254,7 @@ swift test --disable-sandbox \
   -Xcc -fmodules-cache-path="$CLANG_MODULE_CACHE_PATH" \
   -Xswiftc -module-cache-path -Xswiftc "$PWD/.swift-module-cache" "$@"
 BASH
-  chmod +x "$TARGET_DIR/build.sh" "$TARGET_DIR/test.sh"
+  chmod +x "$TARGET_DIR/build.sh" "$TARGET_DIR/run.sh" "$TARGET_DIR/test.sh"
   echo "Generated Package.swift and main.swift for $APP_NAME in $TARGET_DIR (local mode)"
 }
 

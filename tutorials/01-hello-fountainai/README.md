@@ -99,7 +99,7 @@ Build the project and launch it locally:
 
 ```bash
 ./build.sh
-swift run
+./run.sh
 ```
 
 When the app starts successfully, the console prints a friendly greeting:

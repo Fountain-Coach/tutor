@@ -68,7 +68,7 @@ Compile and execute the package:
 
 ```bash
 ./build.sh
-swift run
+./run.sh
 ```
 
 Expected: The program runs without error. Add temporary `print(notes.count)` or `print(first.text)` statements to verify the data roundtrip locally.

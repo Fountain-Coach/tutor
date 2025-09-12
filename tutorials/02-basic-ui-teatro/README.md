@@ -50,7 +50,7 @@ Compile the project and launch the generated SwiftUI app:
 
 ```bash
 ./build.sh
-swift run
+./run.sh
 ```
 
 Expected: A window appears with “Welcome to Teatro” and a “Tap Me” button. Tapping the button prints “Button was tapped” in the console.

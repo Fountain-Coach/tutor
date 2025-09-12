@@ -72,7 +72,7 @@ Compile and run the package:
 
 ```bash
 ./build.sh
-swift run
+./run.sh
 ```
 
 ## Troubleshooting
