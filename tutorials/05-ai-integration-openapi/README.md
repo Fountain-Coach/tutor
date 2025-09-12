@@ -5,6 +5,7 @@ Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the F
 Call FountainAI’s OpenAPI endpoints from any HTTP client. This tutorial focuses on the LLM Gateway’s generate API using environment-driven base URLs; you can target a hosted deployment or your locally running gateway.
 
 ## Before you begin
+- Install Tutor CLI and add to PATH (see docs/tutor-cli.md and docs/shells-and-git.md).
 - Run all commands from `tutorials/05-ai-integration-openapi/`.
 - Ensure you have an API key or local gateway token.
 

@@ -5,6 +5,7 @@ Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the F
 Play audio and synchronize your UI using MIDI 2.0 timing. This lesson shows TypeScript snippets for a browser/Node context; your minimal Swift package scaffolding is for project structure only and does not execute the TS directly.
 
 ## Before you begin
+- Install Tutor CLI and add to PATH (see docs/tutor-cli.md and docs/shells-and-git.md).
 - Run all commands from `tutorials/04-multimedia-midi2/`.
 - If needed, make the script executable:
   ```bash

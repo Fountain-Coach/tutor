@@ -5,6 +5,7 @@ Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the F
 Persist simple data using **FountainStore** within a minimal SPM app. This tutorial uses the template workflow (no full Gateway/services required) and focuses on saving and loading a tiny `Note` model.
 
 ## Before you begin
+- Install Tutor CLI and add to PATH (see docs/tutor-cli.md and docs/shells-and-git.md).
 - Run all commands from `tutorials/03-data-persistence-fountainstore/`.
 - If needed, make the script executable:
   ```bash

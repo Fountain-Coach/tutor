@@ -12,7 +12,10 @@ This repository hosts the tutorial content for FountainAI. Each lesson scaffolds
 - App tooling in `Scripts/`: `new-gui-app.sh <Name>` scaffolds `apps/<Name>`; `make_app.sh <Name>` bundles a `.app` on macOS.
 - These tutorials copy the generated `main.swift` and `Package.swift` locally for a minimal SPM experience.
 
-Deep knowledge: See docs/dependency-management-deep-dive.md for how profiles map to modules, how SwiftPM resolves dependencies, and pinning/versioning guidance.
+Primers and deep dives
+- Shells and Git (zsh PATH, Git basics): docs/shells-and-git.md
+- Tutor CLI (install and usage): docs/tutor-cli.md
+- Dependency management (profiles, SwiftPM): docs/dependency-management-deep-dive.md
 
 ## Getting Started
 
@@ -45,7 +48,30 @@ Expected: the app prints a greeting in the terminal. Open the project in Xcode w
 - Swift 6.1+ toolchain (macOS 14+ recommended)
 - Optional: `OPENAI_API_KEY` for AI features
 - Basic familiarity with Swift and SwiftUI
- - Shells and Git: see docs/shells-and-git.md (zsh PATH, Git basics)
+- Shells and Git: see docs/shells-and-git.md (zsh PATH, Git basics)
+
+## First-time Setup Checklist
+
+- Verify Swift: `swift --version` (requires Swift 6.1+ on macOS 14+).
+- Install Tutor CLI: `Scripts/install-tutor.sh` (installs `tutor` to `~/.local/bin`).
+- Add to PATH (zsh): `echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc`.
+- Confirm install: `which tutor` and `tutor --help`.
+- Choose a tutorial (e.g., `cd tutorials/01-hello-fountainai`) and scaffold: `./setup.sh --upstream`.
+- Build/Run/Test: `tutor build`, `tutor run`, `tutor test`.
+
+## Troubleshooting
+
+- tutor: command not found
+  - Ensure `~/.local/bin` is on PATH (zsh): `echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc`, then reopen the terminal.
+- Swift toolchain issues
+  - Install Xcode + Command Line Tools; accept license: `xcode-select -p`, `xcodebuild -runFirstLaunch`.
+  - Verify: `swift --version` shows 6.1+.
+- Network/clone failures during `./setup.sh --upstream`
+  - Check connectivity, VPN/proxy, and retry. The script resumes from a clean temp dir.
+- Gateway/API errors at runtime
+  - Set env vars before `tutor run`: `export LLM_GATEWAY_URL=http://localhost:8080/api/v1` and optionally `export FOUNTAIN_AI_KEY=sk-...`.
+- Permission denied on scripts
+  - Mark executable: `chmod +x setup.sh`.
 
 ## Tutorials
 

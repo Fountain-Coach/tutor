@@ -5,6 +5,7 @@ Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the F
 Combine UI (Teatro), persistence (FountainStore), multimedia (MIDI2), and AI (OpenAPI) into a simple screenplay editor. This capstone still uses the template-driven SPM workflow; no full platform services are required, though AI calls can target a local or hosted gateway.
 
 ## Before you begin
+- Install Tutor CLI and add to PATH (see docs/tutor-cli.md and docs/shells-and-git.md).
 - Run all commands from `tutorials/06-screenplay-editor-capstone/`.
 - If needed, make the script executable:
   ```bash

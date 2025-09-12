@@ -45,7 +45,10 @@ With your props assembled, you're ready to bring a minimal FountainAI app to lif
 
 ## Before you begin
 
-- Run all commands from `tutorials/01-hello-fountainai/`.
+- Install the Tutor CLI and add it to PATH (see docs/tutor-cli.md and docs/shells-and-git.md):
+  - `Scripts/install-tutor.sh`
+  - `export PATH=$HOME/.local/bin:$PATH` (add permanently via `~/.zshrc` on macOS)
+- Run commands from `tutorials/01-hello-fountainai/`.
 - If needed, make the setup script executable:
   ```bash
   chmod +x setup.sh

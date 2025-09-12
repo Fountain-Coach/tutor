@@ -5,6 +5,9 @@ Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the F
 Modify the scaffolded user interface using FountainAI’s Teatro DSL. This tutorial operates on a minimal SPM app; `setup.sh` wraps the upstream FountainAI scripts and copies generated files locally. You don’t need to run the full Gateway/services for this lesson.
 
 ## Before you begin
+- Install the Tutor CLI and add to PATH (see docs/tutor-cli.md and docs/shells-and-git.md):
+  - `Scripts/install-tutor.sh`
+  - `export PATH=$HOME/.local/bin:$PATH` (add via `~/.zshrc` on macOS)
 - Run all commands from `tutorials/02-basic-ui-teatro/`.
 - If needed, make the script executable:
   ```bash
