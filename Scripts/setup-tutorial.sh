@@ -246,7 +246,7 @@ attempt_upstream() {
     swift run -c release tutor scaffold \
       -Xcc -fmodules-cache-path=$PWD/.modulecache \
       -Xswiftc -module-cache-path -Xswiftc $PWD/.swift-module-cache \
-      --repo "$repodir" --app "$APP_NAME" ${BUNDLE_ID:+--bundle-id "$BUNDLE_ID"}
+      --repo "$repodir" --app "$APP_NAME"
   ) || (
     # Fallback: build ad-hoc with swiftc to avoid SwiftPM manifest compilation
     echo "swift run failed; attempting direct swiftc build…" >&2; \
@@ -254,7 +254,7 @@ attempt_upstream() {
     export SDKROOT="${SDKROOT:-$(xcrun --sdk macosx --show-sdk-path 2>/dev/null || true)}" && \
     mkdir -p .build && \
     swiftc Sources/TutorCLI/main.swift -o .build/tutor 2>/dev/null && \
-    ./.build/tutor scaffold --repo "$repodir" --app "$APP_NAME" ${BUNDLE_ID:+--bundle-id "$BUNDLE_ID"}
+    ./.build/tutor scaffold --repo "$repodir" --app "$APP_NAME"
   ) && {
   if [[ -f "$repodir/apps/$APP_NAME/main.swift" ]]; then
     mkdir -p "$SRC_DIR"

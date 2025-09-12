@@ -95,13 +95,12 @@ struct TutorCLI {
     }
 
     static func runScaffold(args: inout [String]) async {
-        var repo = ""; var app = ""; var bundle: String? = nil
+        var repo = ""; var app = ""
         var it = args.makeIterator()
         while let a = it.next() {
             switch a {
             case "--repo": repo = it.next() ?? ""
             case "--app": app = it.next() ?? ""
-            case "--bundle-id": bundle = it.next()
             default: break
             }
         }
