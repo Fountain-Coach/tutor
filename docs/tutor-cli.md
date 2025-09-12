@@ -8,6 +8,7 @@ A small Swift command-line tool to scaffold, build, run, and test tutorials with
   - `Scripts/install-tutor.sh`
 - Ensure `~/.local/bin` is on your PATH:
   - `export PATH=$HOME/.local/bin:$PATH`
+  - Add permanently (zsh): `echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc`
 
 Or install via the CLI itself (after building it once):
 

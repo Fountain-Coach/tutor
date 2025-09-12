@@ -45,6 +45,7 @@ Expected: the app prints a greeting in the terminal. Open the project in Xcode w
 - Swift 6.1+ toolchain (macOS 14+ recommended)
 - Optional: `OPENAI_API_KEY` for AI features
 - Basic familiarity with Swift and SwiftUI
+ - Shells and Git: see docs/shells-and-git.md (zsh PATH, Git basics)
 
 ## Tutorials
 
