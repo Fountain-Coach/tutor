@@ -31,6 +31,19 @@ Or install via the CLI itself (after building it once):
   - Auto-parallelism: if `--jobs/-j` is not provided, uses CPU cores
   - `--` to pass flags to underlying `swift` (e.g., `-- -c release`)
 
+## Status & Machine Readability
+
+- Live status files are written to `<tutorial>/.tutor/` during `build`, `run`, or `test`:
+  - `status.json` — current phase, status, elapsed, and final exit code; safe to poll.
+  - `events.ndjson` — newline‑delimited JSON event stream (log, phase changes, warnings, errors).
+- Query status at any time:
+  - Human: `tutor status --dir <tutorial>`
+  - JSON: `tutor status --dir <tutorial> --json`
+  - Watch: `tutor status --dir <tutorial> --watch`
+- Control files:
+  - `--no-status-file` to skip writing `status.json`
+  - `--status-file <path>` and `--event-file <path>` to override defaults
+
 ## Live Status Feedback
 
 - The CLI shows a live status line with spinner and elapsed time.
