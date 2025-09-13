@@ -924,19 +924,23 @@ final class LocalHTTPServer: @unchecked Sendable {
             if let data = loadOpenAPI(path: "index.html") { respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: data) }
             else { respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: Data(docsLiteHTML().utf8)) }
         case ("GET", "/docs-lite"):
+            let specData = loadOpenAPI(path: "tutor-serve.yaml")
+            let spec = specData.flatMap { String(data: $0, encoding: .utf8) } ?? "(spec not found)"
+            let escaped = spec
+                .replacingOccurrences(of: "&", with: "&amp;")
+                .replacingOccurrences(of: "<", with: "&lt;")
+                .replacingOccurrences(of: ">", with: "&gt;")
             let html = """
             <!doctype html><html><head><meta charset=\"utf-8\"><title>Tutor Serve API (Lite)</title>
-            <style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:1rem} pre{white-space:pre-wrap;word-wrap:break-word;background:#f6f8fa;padding:1rem;border-radius:8px}</style>
+            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
+            <style>body{font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:1rem} pre{white-space:pre-wrap;word-wrap:break-word;background:#f6f8fa;padding:1rem;border-radius:8px;max-width:100%;overflow:auto}</style>
             </head><body>
             <h1>Tutor Serve API (Lite)</h1>
-            <p>This minimal view fetches the OpenAPI spec served by the CLI and renders it as text. Use <code>/docs</code> or <code>/redoc</code> for full UI (requires CDN access).</p>
-            <pre id=\"spec\">Loading /openapi.yaml ...</pre>
-            <script>
-            fetch('/openapi.yaml').then(r=>r.text()).then(t=>{document.getElementById('spec').textContent=t}).catch(e=>{document.getElementById('spec').textContent='Failed to load: '+e});
-            </script>
+            <p>Below is the OpenAPI spec served locally. For richer UIs, try <code>/docs</code> or <code>/redoc</code>. If they fail due to network policies, this page provides a reliable fallback.</p>
+            <pre>\(escaped)</pre>
             </body></html>
             """
-            respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: Data(html.utf8))
+            respond(conn, status: 200, headers: ["Content-Type": "text/html", "Cache-Control": "no-store"], body: Data(html.utf8))
         case ("GET", "/redoc"):
             if let data = loadOpenAPI(path: "redoc.html") { respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: data) }
             else { respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: Data(docsLiteHTML().utf8)) }
