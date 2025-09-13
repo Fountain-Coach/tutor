@@ -830,7 +830,7 @@ final class LocalHTTPServer: @unchecked Sendable {
             else { respond(conn, status: 500, headers: ["Content-Type": "text/plain"], body: Data("missing openapi".utf8)) }
         case ("GET", "/docs"), ("GET", "/docs/"):
             if let data = loadOpenAPI(path: "index.html") { respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: data) }
-            else { respond(conn, status: 500, headers: ["Content-Type": "text/plain"], body: Data("missing docs".utf8)) }
+            else { respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: Data(docsLiteHTML().utf8)) }
         case ("GET", "/docs-lite"):
             let html = """
             <!doctype html><html><head><meta charset=\"utf-8\"><title>Tutor Serve API (Lite)</title>
@@ -847,7 +847,7 @@ final class LocalHTTPServer: @unchecked Sendable {
             respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: Data(html.utf8))
         case ("GET", "/redoc"):
             if let data = loadOpenAPI(path: "redoc.html") { respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: data) }
-            else { respond(conn, status: 500, headers: ["Content-Type": "text/plain"], body: Data("missing docs".utf8)) }
+            else { respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: Data(docsLiteHTML().utf8)) }
         case ("GET", "/summary"):
             let sum = makeSummary(statusPath: statusPath, eventsPath: eventsPath)
             if let data = try? JSONSerialization.data(withJSONObject: sum, options: [.prettyPrinted]) {
@@ -1037,6 +1037,7 @@ func loadOpenAPI(path: String) -> Data? {
     }
     let docs = [
         "docs/openapi/\(path)",
+        "./docs/openapi/\(path)",
         "../../docs/openapi/\(path)",
         "../../../docs/openapi/\(path)",
         "../../../../docs/openapi/\(path)",
