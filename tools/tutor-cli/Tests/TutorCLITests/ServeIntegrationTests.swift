@@ -126,10 +126,11 @@ final class SSEStreamContentTests: XCTestCase {
         let server = LocalHTTPServer(port: 0, statusPath: status, eventsPath: events, token: nil, midiName: nil, socketPath: nil)
         let port = try server.start()
 
-        class D: NSObject, URLSessionDataDelegate {
+        @MainActor
+        final class D: NSObject, URLSessionDataDelegate {
             let exp: XCTestExpectation
             init(_ exp: XCTestExpectation) { self.exp = exp }
-            var buf = Data()
+            private var buf = Data()
             func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
                 buf.append(data)
                 if let s = String(data: buf, encoding: .utf8), s.contains("event: warning") { exp.fulfill() }
@@ -137,7 +138,7 @@ final class SSEStreamContentTests: XCTestCase {
         }
         let exp = expectation(description: "sse warning")
         let del = D(exp)
-        let session = URLSession(configuration: .default, delegate: del, delegateQueue: nil)
+        let session = URLSession(configuration: .default, delegate: del, delegateQueue: .main)
         var req = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/events")!)
         req.addValue("text/event-stream", forHTTPHeaderField: "Accept")
         let task = session.dataTask(with: req)
