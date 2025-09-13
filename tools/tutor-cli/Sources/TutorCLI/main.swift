@@ -693,6 +693,9 @@ extension TutorCLI {
             if actualPort > 0 {
                 if let token { print("Serving on http://127.0.0.1:\(actualPort)  token=\(token)") }
                 else { print("Serving on http://127.0.0.1:\(actualPort) (auth disabled)") }
+                print("Docs:   http://127.0.0.1:\(actualPort)/docs")
+                print("Redoc:  http://127.0.0.1:\(actualPort)/redoc")
+                print("Spec:   http://127.0.0.1:\(actualPort)/openapi.yaml")
             }
             dispatchMain()
         } catch {

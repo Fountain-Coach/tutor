@@ -65,12 +65,11 @@ Or install via the CLI itself (after building it once):
 
 OpenAPI Spec:
 - An OpenAPI 3.1 specification for the serve API is available at `docs/openapi/tutor-serve.yaml`.
-- Open in browser:
-  - Swagger UI: open `docs/openapi/index.html`
-  - Redoc: open `docs/openapi/redoc.html`
-- Or serve the folder (avoids file:// CORS):
-  - `python3 -m http.server -d docs/openapi 8080` then visit `http://127.0.0.1:8080`
-  - Replace `{port}` server variable in the UI to match your `tutor serve` port.
+- Built-in docs served by the CLI (no file server needed):
+  - Swagger UI: `http://127.0.0.1:<port>/docs`
+  - Redoc: `http://127.0.0.1:<port>/redoc`
+  - Spec: `http://127.0.0.1:<port>/openapi.yaml`
+  - Start server: `tutor serve --dir <tutorial> --port 0 --dev`
 
 ### Unix Socket Client Examples
 
