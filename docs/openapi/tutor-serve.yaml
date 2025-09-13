@@ -1,0 +1,137 @@
+openapi: 3.1.0
+info:
+  title: Tutor CLI Serve API
+  version: 1.0.0
+  description: |
+    Local HTTP API exposed by `tutor serve` for status queries and live event streaming.
+    When started without `--dev` or `--no-auth`, requests require a bearer token stored at `<tutorial>/.tutor/token`.
+servers:
+  - url: http://127.0.0.1:{port}
+    description: Localhost server
+    variables:
+      port:
+        default: '53127'
+security:
+  - bearerAuth: []
+  - {}
+paths:
+  /health:
+    get:
+      summary: Health Check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required: [ok]
+        '401':
+          description: Unauthorized (when auth enabled)
+  /status:
+    get:
+      summary: Current Status
+      description: Returns the current status payload written to `.tutor/status.json`.
+      responses:
+        '200':
+          description: Status object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        '404':
+          description: No status available
+        '401':
+          description: Unauthorized (when auth enabled)
+  /summary:
+    get:
+      summary: Build/Test Summary
+      description: Same structure as `tutor --json-summary` output.
+      responses:
+        '200':
+          description: Summary object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Summary'
+        '500':
+          description: Unable to compute summary
+        '401':
+          description: Unauthorized (when auth enabled)
+  /events:
+    get:
+      summary: Live Events (SSE)
+      description: |
+        Server-Sent Events stream of newline-delimited JSON entries from `.tutor/events.ndjson`.
+        Each event is framed as an SSE message with `event: <type>` and `data: <json>` lines, separated by a blank line.
+      responses:
+        '200':
+          description: SSE stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              examples:
+                sample:
+                  summary: Example SSE frame
+                  value: |
+                    event: log\n
+                    data: {"type":"log","ts":"2025-01-01T00:00:00Z","line":"Compiling Foo"}\n\n
+        '401':
+          description: Unauthorized (when auth enabled)
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Status:
+      type: object
+      properties:
+        title: { type: string }
+        command: { type: string, enum: [build, run, test] }
+        phase: { type: string }
+        status: { type: string }
+        elapsed: { type: integer, minimum: 0 }
+        timestamp: { type: string, format: date-time }
+        final: { type: boolean }
+        exitCode: { type: integer }
+        errors:
+          type: array
+          items: { $ref: '#/components/schemas/Diag' }
+        warnings:
+          type: array
+          items: { $ref: '#/components/schemas/Diag' }
+      required: [title, command, phase, elapsed]
+    Summary:
+      type: object
+      properties:
+        title: { type: string }
+        command: { type: string, enum: [build, run, test] }
+        phase: { type: string }
+        elapsed: { type: integer, minimum: 0 }
+        exitCode: { type: integer }
+        category: { type: string, enum: [success, DEPENDENCY_NETWORK, RESOLVE_GRAPH, COMPILE, LINK, TEST, RUNTIME, UNKNOWN] }
+        hint: { type: string }
+        errorCount: { type: integer, minimum: 0 }
+        warningCount: { type: integer, minimum: 0 }
+        errors:
+          type: array
+          items: { $ref: '#/components/schemas/Diag' }
+        warnings:
+          type: array
+          items: { $ref: '#/components/schemas/Diag' }
+      required: [title, command, phase, elapsed, exitCode, category, errorCount, warningCount]
+    Diag:
+      type: object
+      properties:
+        file: { type: string }
+        line: { type: integer, minimum: 0 }
+        column: { type: integer, minimum: 0 }
+        message: { type: string }
+      required: [message]
+

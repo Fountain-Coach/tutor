@@ -60,8 +60,17 @@ Or install via the CLI itself (after building it once):
   - `GET /events` → Server-Sent Events (SSE) stream; emits `event: <type>` with `data: {…}` per NDJSON entry.
   - `GET /summary` → on-demand JSON summary (same structure as `--json-summary`)
 - Dev profile: add `--dev` to disable auth locally. Otherwise, a token in `.tutor/token` is required.
- - Optional MIDI mirroring from server: `--midi [--midi-virtual-name <name>]` to broadcast events as SysEx via a virtual MIDI source.
- - Unix socket mode: `--socket <path>` starts a Unix domain socket that streams SSE lines (no HTTP headers) for sandboxed environments.
+- Optional MIDI mirroring from server: `--midi [--midi-virtual-name <name>]` to broadcast events as SysEx via a virtual MIDI source.
+- Unix socket mode: `--socket <path>` starts a Unix domain socket that streams SSE lines (no HTTP headers) for sandboxed environments.
+
+OpenAPI Spec:
+- An OpenAPI 3.1 specification for the serve API is available at `docs/openapi/tutor-serve.yaml`.
+- Open in browser:
+  - Swagger UI: open `docs/openapi/index.html`
+  - Redoc: open `docs/openapi/redoc.html`
+- Or serve the folder (avoids file:// CORS):
+  - `python3 -m http.server -d docs/openapi 8080` then visit `http://127.0.0.1:8080`
+  - Replace `{port}` server variable in the UI to match your `tutor serve` port.
 
 ### Unix Socket Client Examples
 
