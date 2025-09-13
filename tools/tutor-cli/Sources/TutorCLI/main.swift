@@ -694,7 +694,7 @@ extension TutorCLI {
         func get(_ path: String, accept: String? = nil, timeout: TimeInterval = 3.0) -> (code: Int, body: Data) {
             let url = URL(string: "http://127.0.0.1:\(port)\(path)")!
             var req = URLRequest(url: url); if let a = accept { req.addValue(a, forHTTPHeaderField: "Accept") }
-            final class Box { var code: Int = -1; var body: Data = Data() }
+            final class Box: @unchecked Sendable { var code: Int = -1; var body: Data = Data() }
             let box = Box()
             let sem = DispatchSemaphore(value: 0)
             let task = URLSession.shared.dataTask(with: req) { data, resp, _ in
@@ -725,12 +725,11 @@ extension TutorCLI {
         let d = get("/docs"); print("/docs -> \(d.code)")
         ok = ok && (d.code == 200)
         // SSE: subscribe and then write warning
-        final class SSECap: NSObject, URLSessionDataDelegate, @unchecked Sendable { let exp: DispatchSemaphore; private(set) var saw = false; init(_ exp: DispatchSemaphore){ self.exp = exp }
+        final class SSECap: NSObject, URLSessionDataDelegate, @unchecked Sendable { private(set) var saw = false
             func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
-                if let s = String(data: data, encoding: .utf8), s.contains("event: warning") { saw = true; exp.signal() }
+                if let s = String(data: data, encoding: .utf8), s.contains("event: warning") { saw = true }
             } }
-        let sem = DispatchSemaphore(value: 0)
-        let cap = SSECap(sem)
+        let cap = SSECap()
         let session = URLSession(configuration: .default, delegate: cap, delegateQueue: .main)
         var req = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/events")!)
         req.addValue("text/event-stream", forHTTPHeaderField: "Accept")
@@ -740,8 +739,9 @@ extension TutorCLI {
         DispatchQueue.global().asyncAfter(deadline: .now() + 0.5) {
             _ = appendNDJSON(path: eventsPath, object: ["type": "warning", "warning": ["message": "be careful"]])
         }
-        _ = sem.wait(timeout: .now() + 3.0)
-        let sseOK = cap.saw
+        // Poll for up to 3 seconds
+        var tries = 30; var sseOK = false
+        while tries > 0 { if cap.saw { sseOK = true; break }; Thread.sleep(forTimeInterval: 0.1); tries -= 1 }
         print("/events (sse) -> \(sseOK ? "OK" : "NO EVENT")")
         ok = ok && sseOK
         if ok { print("Doctor: OK"); exit(0) } else { fputs("Doctor: some checks failed\n", stderr); exit(1) }
