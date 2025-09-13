@@ -126,8 +126,7 @@ final class SSEStreamContentTests: XCTestCase {
         let server = LocalHTTPServer(port: 0, statusPath: status, eventsPath: events, token: nil, midiName: nil, socketPath: nil)
         let port = try server.start()
 
-        @MainActor
-        final class D: NSObject, URLSessionDataDelegate {
+        final class D: NSObject, @preconcurrency URLSessionDataDelegate, @unchecked Sendable {
             let exp: XCTestExpectation
             init(_ exp: XCTestExpectation) { self.exp = exp }
             private var buf = Data()
