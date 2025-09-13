@@ -28,6 +28,7 @@ Or install via the CLI itself (after building it once):
   - `--verbose` or `-v` to print SwiftPM verbose output
   - `--no-progress` to disable the live status line
   - `--quiet` to suppress Swift output and show only status
+  - `--json-summary` to emit a final JSON summary to stdout (pair with `--quiet` for machine use)
   - Auto-parallelism: if `--jobs/-j` is not provided, uses CPU cores
   - `--` to pass flags to underlying `swift` (e.g., `-- -c release`)
 
@@ -43,6 +44,14 @@ Or install via the CLI itself (after building it once):
 - Control files:
   - `--no-status-file` to skip writing `status.json`
   - `--status-file <path>` and `--event-file <path>` to override defaults
+
+## Error Taxonomy & Hints
+
+- On failure, the CLI classifies errors and provides concise hints.
+- Categories: `DEPENDENCY_NETWORK`, `RESOLVE_GRAPH`, `COMPILE`, `LINK`, `TEST`, `RUNTIME`, `UNKNOWN`.
+- Get a one‑shot machine summary:
+  - `tutor build --json-summary --quiet`
+  - Output includes `category`, `hint`, counts, and first errors/warnings.
 
 ## Live Status Feedback
 
@@ -67,3 +76,4 @@ Or install via the CLI itself (after building it once):
 
 - The CLI is preferred. Profiles in `setup.sh` still control which FountainAI products your app depends on.
 - See also: `docs/dependency-management-deep-dive.md` for profiles and SwiftPM behavior.
+- Roadmap: `docs/tutor-cli-roadmap.md` tracks ongoing improvements.

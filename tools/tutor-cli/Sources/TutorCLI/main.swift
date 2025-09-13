@@ -77,6 +77,7 @@ struct TutorCLI {
         var noStatusFile = false
         var statusFileOverride: String? = nil
         var eventFileOverride: String? = nil
+        var jsonSummary = false
         if let idx = args.firstIndex(of: "--verbose") { verbose = true; args.remove(at: idx) }
         if let idx = args.firstIndex(of: "-v") { verbose = true; args.remove(at: idx) }
         if let idx = args.firstIndex(of: "--no-progress") { showProgress = false; args.remove(at: idx) }
@@ -84,6 +85,7 @@ struct TutorCLI {
         if let idx = args.firstIndex(of: "--no-status-file") { noStatusFile = true; args.remove(at: idx) }
         if let idx = args.firstIndex(of: "--status-file"), idx + 1 < args.count { statusFileOverride = args[idx+1]; args.removeSubrange(idx...(idx+1)) }
         if let idx = args.firstIndex(of: "--event-file"), idx + 1 < args.count { eventFileOverride = args[idx+1]; args.removeSubrange(idx...(idx+1)) }
+        if let idx = args.firstIndex(of: "--json-summary") { jsonSummary = true; args.remove(at: idx) }
 
         let (dir, pass) = parseDir(args: &args)
         let moduleCache = (dir as NSString).appendingPathComponent(".modulecache")
@@ -124,7 +126,8 @@ struct TutorCLI {
             echoOutput: !quiet,
             statusFile: statusPath,
             eventFile: eventPath,
-            command: cmd
+            command: cmd,
+            jsonSummary: jsonSummary
         )
         if code != 0 { exit(Int32(code)) }
     }
@@ -177,7 +180,8 @@ struct TutorCLI {
                            echoOutput: Bool = true,
                            statusFile: String?,
                            eventFile: String?,
-                           command: String) -> Int32 {
+                           command: String,
+                           jsonSummary: Bool) -> Int32 {
         let task = Process()
         task.executableURL = URL(fileURLWithPath: launchPath)
         task.arguments = args
@@ -199,6 +203,10 @@ struct TutorCLI {
         var warnings: [[String: Any]] = []
         let errorRegex = try? NSRegularExpression(pattern: "^(.*?):(\\d+):(\\d+): error: (.*)$")
         let warningRegex = try? NSRegularExpression(pattern: "^(.*?):(\\d+):(\\d+): warning: (.*)$")
+        var sawTestFailure = false
+        var sawLinkerError = false
+        var sawResolveError = false
+        var sawNetworkError = false
 
         func writeStatus(final: Bool = false, exitCode: Int32? = nil) {
             guard let statusFile else { return }
@@ -252,6 +260,9 @@ struct TutorCLI {
                     errors.append(e)
                     writeEvent("error", ["error": e])
                     reporter.set(status: "Error encountered")
+                    if msg.localizedCaseInsensitiveContains("linker command failed") || msg.localizedCaseInsensitiveContains("Undefined symbols") { sawLinkerError = true }
+                    if msg.localizedCaseInsensitiveContains("could not resolve") || msg.localizedCaseInsensitiveContains("resolve") { sawResolveError = true }
+                    if msg.localizedCaseInsensitiveContains("timed out") || msg.localizedCaseInsensitiveContains("network") || msg.localizedCaseInsensitiveContains("failed to connect") { sawNetworkError = true }
                 } else if let m = warningRegex?.firstMatch(in: s, options: [], range: lineRange) {
                     let file = (s as NSString).substring(with: m.range(at: 1))
                     let ln = Int((s as NSString).substring(with: m.range(at: 2))) ?? 0
@@ -262,6 +273,7 @@ struct TutorCLI {
                     writeEvent("warning", ["warning": w])
                 }
             }
+            if s.contains("Test Suite 'All tests' failed") || s.contains("Failing tests:") { sawTestFailure = true }
 
             // Emit log lines as events (without full echo if quiet)
             writeEvent("log", ["line": s])
@@ -300,6 +312,27 @@ struct TutorCLI {
         let code = task.terminationStatus
         writeEvent("end", ["exitCode": code])
         writeStatus(final: true, exitCode: code)
+
+        if jsonSummary {
+            let elapsed = Date().timeIntervalSince(start)
+            let (category, hint) = categorizeFailure(command: command, phase: phase, code: code, sawTestFailure: sawTestFailure, sawLinkerError: sawLinkerError, sawResolveError: sawResolveError, sawNetworkError: sawNetworkError, errors: errors)
+            let summary: [String: Any] = [
+                "title": title,
+                "command": command,
+                "phase": phase,
+                "elapsed": Int(elapsed),
+                "exitCode": code,
+                "category": category,
+                "hint": hint,
+                "errorCount": errors.count,
+                "warningCount": warnings.count,
+                "errors": errors,
+                "warnings": warnings
+            ]
+            if let data = try? JSONSerialization.data(withJSONObject: summary, options: [.prettyPrinted]), let text = String(data: data, encoding: .utf8) {
+                print(text)
+            }
+        }
         return code
     }
 }
@@ -413,6 +446,20 @@ func appendNDJSON(path: String, object: [String: Any]) -> Bool {
         return false
     }
 }
+
+// Categorize failure and provide a concise hint
+func categorizeFailure(command: String, phase: String, code: Int32, sawTestFailure: Bool, sawLinkerError: Bool, sawResolveError: Bool, sawNetworkError: Bool, errors: [[String: Any]]) -> (String, String) {
+    if code == 0 { return ("success", "") }
+    // Heuristics
+    if sawNetworkError || (phase == "fetching" && !errors.isEmpty) { return ("DEPENDENCY_NETWORK", "Check network and credentials. Try: `swift package resolve -v`. If behind a proxy, configure git and SwiftPM.") }
+    if sawResolveError || phase == "resolving" { return ("RESOLVE_GRAPH", "Dependency resolution failed. Pin or update versions, then `swift package clean && swift package resolve -v`.") }
+    if sawTestFailure || (command == "test" && phase == "testing") { return ("TEST", "Tests failed. Run `tutor test --verbose` for details; focus on the first failing test.") }
+    if sawLinkerError || phase == "linking" { return ("LINK", "Linker error. Verify target dependencies and frameworks, clean build, and ensure module visibility.") }
+    if phase == "compiling" || errors.contains(where: { ($0["file"] as? String)?.hasSuffix(".swift") == true }) {
+        return ("COMPILE", "Compile error. Inspect the first error. Try `tutor build --verbose` to see the failing file and line.")
+    }
+    if command == "run" { return ("RUNTIME", "App crashed at runtime. Re-run with `tutor run --verbose` and check logs.") }
+    return ("UNKNOWN", "Failure cause unclear. Re-run with `--verbose` and check `.tutor/events.ndjson` for clues.") }
 
 // MARK: - Status command
 
