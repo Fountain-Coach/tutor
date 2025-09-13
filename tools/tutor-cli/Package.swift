@@ -12,9 +12,7 @@ let package = Package(
         .executableTarget(
             name: "TutorCLI",
             dependencies: [],
-            resources: [
-                .process("OpenAPI")
-            ],
+            resources: [],
             swiftSettings: [
                 .unsafeFlags(["-parse-as-library"]) // allow @main with helper top-level decls
             ],

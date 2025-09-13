@@ -48,28 +48,23 @@ Or install via the CLI itself (after building it once):
   - `--no-status-file` to skip writing `status.json`
   - `--status-file <path>` and `--event-file <path>` to override defaults
 
-## Local Server (HTTP + SSE)
+## Local Server (Agents)
 
-- Start a local endpoint to query live status and subscribe to events without file polling:
-  - `tutor serve [--dir <path>] [--port <n>|--port 0] [--no-auth] [--dev] [--socket <path>] [--midi] [--midi-virtual-name <name>]`
+- Minimal endpoints for automation:
+  - `tutor serve [--dir <path>] [--port <n>|--port 0] [--no-auth] [--dev] [--socket <path>]`
 - Default bind: `127.0.0.1:<port>`; when `--port 0`, the OS picks a random port.
 - A bearer token is generated in `<tutorial>/.tutor/token` and required unless `--no-auth` is passed.
 - Endpoints:
   - `GET /health` → `{ "ok": true }`
-  - `GET /status` → contents of `status.json`
-  - `GET /events` → Server-Sent Events (SSE) stream; emits `event: <type>` with `data: {…}` per NDJSON entry.
-  - `GET /summary` → on-demand JSON summary (same structure as `--json-summary`)
+  - `GET /status` → contents of `.tutor/status.json`
+  - `GET /summary` → JSON summary (same as `--json-summary`)
+  - `GET /events` → Server-Sent Events (SSE) stream; emits an event per `.tutor/events.ndjson` line
 - Dev profile: add `--dev` to disable auth locally. Otherwise, a token in `.tutor/token` is required.
 - Optional MIDI mirroring from server: `--midi [--midi-virtual-name <name>]` to broadcast events as SysEx via a virtual MIDI source.
 - Unix socket mode: `--socket <path>` starts a Unix domain socket that streams SSE lines (no HTTP headers) for sandboxed environments.
 
 OpenAPI Spec:
-- An OpenAPI 3.1 specification for the serve API is available at `docs/openapi/tutor-serve.yaml`.
-- Built-in docs served by the CLI (no file server needed):
-  - Swagger UI: `http://127.0.0.1:<port>/docs`
-  - Redoc: `http://127.0.0.1:<port>/redoc`
-  - Spec: `http://127.0.0.1:<port>/openapi.yaml`
-  - Start server: `tutor serve --dir <tutorial> --port 0 --dev`
+- (Optional) You can keep a spec in your repo for reference; the server focuses on minimal endpoints for agents.
 
 ### Unix Socket Client Examples
 
@@ -141,12 +136,12 @@ OpenAPI Spec:
   - Build: `swiftc unix_sse_client.swift -o unix-sse`
   - Run: `./unix-sse /tmp/tutor.sse`
 
-### HTTP SSE Client Example (Swift)
+### Native Viewer (Teatro‑Style)
 
-- A minimal client for `/events` over HTTP is provided at `docs/examples/sse_http_client.swift`.
-- Build and run:
-  - `swiftc docs/examples/sse_http_client.swift -o sse-http`
-  - `./sse-http http://127.0.0.1:<port>/events`
+- Launch the macOS viewer for status/events:
+  - `tutor viewer` (run from a tutorial folder)
+- Shows status (phase, elapsed, exit code, errors) and live events.
+- If `.tutor` is empty, run `tutor doctor` or any `tutor build/test` to seed files.
 
 ## MIDI Output (Experimental)
 

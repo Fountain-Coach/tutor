@@ -53,7 +53,7 @@ struct TutorCLI {
           run        [--dir <path>] [--verbose] [--no-progress] [--quiet] [--json-summary] [--ci] [--midi] [--midi-virtual-name <name>] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift run args>]
           test       [--dir <path>] [--verbose] [--no-progress] [--quiet] [--json-summary] [--ci] [--midi] [--midi-virtual-name <name>] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift test args>]
           status     [--dir <path>] [--json] [--watch]
-          serve      [--dir <path>] [--port <n>|--port 0] [--no-auth] [--dev] [--socket <path>] [--open] [--midi] [--midi-virtual-name <name>]
+          serve      [--dir <path>] [--port <n>|--port 0] [--no-auth] [--dev] [--socket <path>] [--midi] [--midi-virtual-name <name>]
           doctor     [--dir <path>]  (runs local server health checks)
           viewer     [--dir <path>]  (launch native viewer for status/events)
           viewer     [--dir <path>]  (launch native viewer for status/events)
@@ -722,24 +722,9 @@ extension TutorCLI {
         // Status
         let s = get("/status"); print("/status -> \(s.code)")
         ok = ok && (s.code == 200)
-        // OpenAPI
-        let y = get("/openapi.yaml"); let yStr = String(data: y.body, encoding: .utf8) ?? ""
-        print("/openapi.yaml -> \(y.code)")
-        ok = ok && (y.code == 200 && yStr.contains("openapi:"))
-        // Docs-lite
-        let dl = get("/docs-lite"); let dlStr = String(data: dl.body, encoding: .utf8) ?? ""
-        print("/docs-lite -> \(dl.code)")
-        ok = ok && (dl.code == 200 && dlStr.contains("Tutor Serve API (Lite)"))
-        // Docs (offline Swagger UI)
-        let d = get("/docs"); print("/docs -> \(d.code)")
-        ok = ok && (d.code == 200)
-        // Assets
-        let css = get("/assets/swagger-ui.css"); print("/assets/swagger-ui.css -> \(css.code) (\(css.body.count) bytes)")
-        ok = ok && (css.code == 200 && css.body.count > 1000)
-        let js = get("/assets/swagger-ui-bundle.js"); print("/assets/swagger-ui-bundle.js -> \(js.code) (\(js.body.count) bytes)")
-        ok = ok && (js.code == 200 && js.body.count > 10000)
-        let rd = get("/assets/redoc.standalone.js"); print("/assets/redoc.standalone.js -> \(rd.code) (\(rd.body.count) bytes)")
-        ok = ok && (rd.code == 200 && rd.body.count > 10000)
+        // Summary
+        let sum = get("/summary"); print("/summary -> \(sum.code)")
+        ok = ok && (sum.code == 200)
         // SSE: subscribe and then write warning
         final class SSECap: NSObject, URLSessionDataDelegate, @unchecked Sendable { private(set) var saw = false
             func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
@@ -773,14 +758,12 @@ extension TutorCLI {
         var midiEnabled = false
         var midiName: String? = nil
         var socketPath: String? = nil
-        var openDocs = false
         if let idx = args.firstIndex(of: "--port"), idx + 1 < args.count, let p = Int(args[idx+1]) { port = p; args.removeSubrange(idx...(idx+1)) }
         if let idx = args.firstIndex(of: "--no-auth") { noAuth = true; args.remove(at: idx) }
         if let idx = args.firstIndex(of: "--dev") { dev = true; args.remove(at: idx) }
         if let idx = args.firstIndex(of: "--socket"), idx + 1 < args.count { socketPath = args[idx+1]; args.removeSubrange(idx...(idx+1)) }
         if let idx = args.firstIndex(of: "--midi") { midiEnabled = true; args.remove(at: idx) }
         if let idx = args.firstIndex(of: "--midi-virtual-name"), idx + 1 < args.count { midiName = args[idx+1]; args.removeSubrange(idx...(idx+1)) }
-        if let idx = args.firstIndex(of: "--open") { openDocs = true; args.remove(at: idx) }
         let (dir, _) = parseDir(args: &args)
 
         let tutorDir = (dir as NSString).appendingPathComponent(".tutor")
@@ -805,17 +788,7 @@ extension TutorCLI {
             if actualPort > 0 {
                 if let token { print("Serving on http://127.0.0.1:\(actualPort)  token=\(token)") }
                 else { print("Serving on http://127.0.0.1:\(actualPort) (auth disabled)") }
-                print("Docs:   http://127.0.0.1:\(actualPort)/docs (full UI; needs CDN)")
-                print("Lite:   http://127.0.0.1:\(actualPort)/docs-lite (no external deps)")
-                print("Redoc:  http://127.0.0.1:\(actualPort)/redoc")
-                print("Spec:   http://127.0.0.1:\(actualPort)/openapi.yaml")
-                if openDocs {
-                    // Try to open the offline-friendly page in default browser
-                    let proc = Process()
-                    proc.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-                    proc.arguments = ["http://127.0.0.1:\(actualPort)/docs-lite"]
-                    try? proc.run()
-                }
+                print("Endpoints: /health, /status, /summary, /events | Use 'tutor viewer' for native UI")
             }
             // Keep process alive indefinitely (simple, robust)
             while true { Thread.sleep(forTimeInterval: 60) }
@@ -946,10 +919,8 @@ final class LocalHTTPServer: @unchecked Sendable {
 
         switch (method, urlPath) {
         case ("GET", "/"):
-            // Redirect root to /docs-lite for offline-friendly default
-            let head = "HTTP/1.1 302 Found\r\nLocation: /docs-lite\r\nConnection: close\r\n\r\n"
-            conn.send(content: Data(head.utf8), completion: .contentProcessed { [weak self] _ in self?.close(conn) })
-            return
+            let json = "{""message"":""Tutor Serve — Use /health, /status, /summary, /events; run 'tutor viewer' for native UI""}"
+            respond(conn, status: 200, headers: ["Content-Type": "application/json"], body: Data(json.utf8))
         case ("GET", "/health"):
             respond(conn, status: 200, headers: ["Content-Type": "application/json"], body: Data("{\"ok\":true}".utf8))
         case ("GET", "/status"):
@@ -958,57 +929,7 @@ final class LocalHTTPServer: @unchecked Sendable {
             } else {
                 respond(conn, status: 404, headers: ["Content-Type": "application/json"], body: Data("{\"error\":\"no status\"}".utf8))
             }
-        case ("GET", "/openapi.yaml"):
-            if let data = loadOpenAPI(path: "tutor-serve.yaml") { respond(conn, status: 200, headers: ["Content-Type": "application/yaml"], body: data) }
-            else { respond(conn, status: 500, headers: ["Content-Type": "text/plain"], body: Data("missing openapi".utf8)) }
-        case ("GET", "/assets/swagger-ui.css"):
-            if let data = loadOpenAPI(path: "assets/swagger-ui.css") { respond(conn, status: 200, headers: ["Content-Type": "text/css; charset=utf-8", "Cache-Control": "no-store"], body: data) }
-            else { respond(conn, status: 404, headers: ["Content-Type": "text/plain"], body: Data("missing asset".utf8)) }
-        case ("GET", "/assets/swagger-ui-bundle.js"):
-            if let data = loadOpenAPI(path: "assets/swagger-ui-bundle.js") { respond(conn, status: 200, headers: ["Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store"], body: data) }
-            else { respond(conn, status: 404, headers: ["Content-Type": "text/plain"], body: Data("missing asset".utf8)) }
-        case ("GET", "/docs"), ("GET", "/docs/"):
-            if let data = loadOpenAPI(path: "index.html") { respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: data) }
-            else { respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: Data(docsLiteHTML().utf8)) }
-        case ("GET", "/docs-lite"):
-            let specData = loadOpenAPI(path: "tutor-serve.yaml")
-            let spec = specData.flatMap { String(data: $0, encoding: .utf8) } ?? "(spec not found)"
-            let escaped = spec
-                .replacingOccurrences(of: "&", with: "&amp;")
-                .replacingOccurrences(of: "<", with: "&lt;")
-                .replacingOccurrences(of: ">", with: "&gt;")
-            let html = """
-            <!doctype html><html><head><meta charset=\"utf-8\"><title>Tutor Serve API (Lite)</title>
-            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
-            <style>body{font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:1rem} pre{white-space:pre-wrap;word-wrap:break-word;background:#f6f8fa;padding:1rem;border-radius:8px;max-width:100%;overflow:auto}</style>
-            </head><body>
-            <h1>Tutor Serve API (Lite)</h1>
-            <p>Below is the OpenAPI spec served locally. For richer UIs, try <code>/docs</code> or <code>/redoc</code>. If they fail due to network policies, this page provides a reliable fallback.</p>
-            <pre>\(escaped)</pre>
-            </body></html>
-            """
-            respond(conn, status: 200, headers: ["Content-Type": "text/html", "Cache-Control": "no-store"], body: Data(html.utf8))
-        case ("GET", "/redoc"):
-            // Serve Redoc offline using vendored asset
-            let html = """
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <meta charset=\"utf-8\"/>
-                <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
-                <title>Tutor Serve API — Redoc</title>
-                <style> body { margin: 0; padding: 0 } </style>
-                <script src=\"/assets/redoc.standalone.js\"></script>
-              </head>
-              <body>
-                <redoc spec-url=\"/openapi.yaml\"></redoc>
-              </body>
-            </html>
-            """
-            respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: Data(html.utf8))
-        case ("GET", "/assets/redoc.standalone.js"):
-            if let data = loadOpenAPI(path: "assets/redoc.standalone.js") { respond(conn, status: 200, headers: ["Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store"], body: data) }
-            else { respond(conn, status: 404, headers: ["Content-Type": "text/plain"], body: Data("missing asset".utf8)) }
+        // No browser UIs served; minimal agent endpoints only
         case ("GET", "/summary"):
             let sum = makeSummary(statusPath: statusPath, eventsPath: eventsPath)
             if let data = try? JSONSerialization.data(withJSONObject: sum, options: [.prettyPrinted]) {
