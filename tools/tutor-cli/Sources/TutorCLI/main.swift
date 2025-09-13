@@ -1022,6 +1022,27 @@ func loadOpenAPI(path: String) -> Data? {
         return try? Data(contentsOf: url)
     }
     #endif
+    // Fallbacks for test/runtime environments where resources may not be bundled as expected
+    let fm = FileManager.default
+    let candidates = [
+        "tools/tutor-cli/Sources/TutorCLI/OpenAPI/\(path)",
+        "Sources/TutorCLI/OpenAPI/\(path)",
+        "../Sources/TutorCLI/OpenAPI/\(path)",
+        "../../Sources/TutorCLI/OpenAPI/\(path)",
+        "../../../Sources/TutorCLI/OpenAPI/\(path)",
+    ]
+    for c in candidates {
+        if fm.fileExists(atPath: c) { return try? Data(contentsOf: URL(fileURLWithPath: c)) }
+    }
+    let docs = [
+        "docs/openapi/\(path)",
+        "../../docs/openapi/\(path)",
+        "../../../docs/openapi/\(path)",
+        "../../../../docs/openapi/\(path)",
+    ]
+    for c in docs {
+        if fm.fileExists(atPath: c) { return try? Data(contentsOf: URL(fileURLWithPath: c)) }
+    }
     return nil
 }
 
