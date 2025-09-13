@@ -8,7 +8,7 @@ import Darwin
 #endif
 
 struct CLI {
-    enum Command: String { case scaffold, build, run, test, status, serve, install, help }
+    enum Command: String { case scaffold, build, run, test, status, serve, doctor, install, help }
 }
 
 struct TutorCLI {
@@ -32,6 +32,8 @@ struct TutorCLI {
             runStatus(args: &rest)
         case .serve:
             runServe(args: &rest)
+        case .doctor:
+            await runDoctor(args: &rest)
         case .install:
             runInstall(args: &rest)
         case .help:
@@ -50,6 +52,7 @@ struct TutorCLI {
           test       [--dir <path>] [--verbose] [--no-progress] [--quiet] [--json-summary] [--ci] [--midi] [--midi-virtual-name <name>] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift test args>]
           status     [--dir <path>] [--json] [--watch]
           serve      [--dir <path>] [--port <n>|--port 0] [--no-auth] [--dev] [--socket <path>] [--midi] [--midi-virtual-name <name>]
+          doctor     [--dir <path>]  (runs local server health checks)
 
         Examples:
           tutor build --dir tutorials/01-hello-fountainai
@@ -667,6 +670,80 @@ extension TutorCLI {
 // MARK: - Serve (HTTP + SSE)
 
 extension TutorCLI {
+    static func runDoctor(args: inout [String]) async {
+        let (dir, _) = parseDir(args: &args)
+        let tutorDir = (dir as NSString).appendingPathComponent(".tutor")
+        try? FileManager.default.createDirectory(atPath: tutorDir, withIntermediateDirectories: true)
+        let statusPath = (tutorDir as NSString).appendingPathComponent("status.json")
+        let eventsPath = (tutorDir as NSString).appendingPathComponent("events.ndjson")
+        if !FileManager.default.fileExists(atPath: statusPath) {
+            _ = writeJSONAtomic(path: statusPath, object: [
+                "title": "Doctor",
+                "command": "build",
+                "phase": "resolving",
+                "elapsed": 0,
+                "exitCode": 0
+            ])
+        }
+        if !FileManager.default.fileExists(atPath: eventsPath) {
+            _ = appendNDJSON(path: eventsPath, object: ["type": "log", "line": "init"]) 
+        }
+        let server = LocalHTTPServer(port: 0, statusPath: statusPath, eventsPath: eventsPath, token: nil, midiName: nil, socketPath: nil)
+        let port = (try? server.start()) ?? 0
+        if port == 0 { fputs("Doctor: failed to start server\n", stderr); exit(2) }
+        func get(_ path: String, accept: String? = nil, timeout: TimeInterval = 3.0) -> (code: Int, body: Data) {
+            let url = URL(string: "http://127.0.0.1:\(port)\(path)")!
+            var req = URLRequest(url: url); if let a = accept { req.addValue(a, forHTTPHeaderField: "Accept") }
+            let sem = DispatchSemaphore(value: 1); sem.wait()
+            var code = -1; var body = Data()
+            let task = URLSession.shared.dataTask(with: req) { data, resp, _ in
+                code = (resp as? HTTPURLResponse)?.statusCode ?? -1
+                body = data ?? Data(); sem.signal()
+            }
+            task.resume()
+            _ = sem.wait(timeout: .now() + timeout)
+            return (code, body)
+        }
+        var ok = true
+        // Health
+        let h = get("/health"); print("/health -> \(h.code)")
+        ok = ok && (h.code == 200)
+        // Status
+        let s = get("/status"); print("/status -> \(s.code)")
+        ok = ok && (s.code == 200)
+        // OpenAPI
+        let y = get("/openapi.yaml"); let yStr = String(data: y.body, encoding: .utf8) ?? ""
+        print("/openapi.yaml -> \(y.code)")
+        ok = ok && (y.code == 200 && yStr.contains("openapi:"))
+        // Docs-lite
+        let dl = get("/docs-lite"); let dlStr = String(data: dl.body, encoding: .utf8) ?? ""
+        print("/docs-lite -> \(dl.code)")
+        ok = ok && (dl.code == 200 && dlStr.contains("Tutor Serve API (Lite)"))
+        // Docs (falls back to lite)
+        let d = get("/docs"); print("/docs -> \(d.code)")
+        ok = ok && (d.code == 200)
+        // SSE: subscribe and then write warning
+        final class SSECap: NSObject, URLSessionDataDelegate { let exp: DispatchSemaphore; var saw = false; init(_ exp: DispatchSemaphore){ self.exp = exp }
+            func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+                if let s = String(data: data, encoding: .utf8), s.contains("event: warning") { saw = true; exp.signal() }
+            } }
+        let sem = DispatchSemaphore(value: 0)
+        let cap = SSECap(sem)
+        let session = URLSession(configuration: .default, delegate: cap, delegateQueue: nil)
+        var req = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/events")!)
+        req.addValue("text/event-stream", forHTTPHeaderField: "Accept")
+        let task = session.dataTask(with: req)
+        task.resume()
+        // Append an event after a short delay
+        DispatchQueue.global().asyncAfter(deadline: .now() + 0.5) {
+            _ = appendNDJSON(path: eventsPath, object: ["type": "warning", "warning": ["message": "be careful"]])
+        }
+        _ = sem.wait(timeout: .now() + 3.0)
+        let sseOK = cap.saw
+        print("/events (sse) -> \(sseOK ? "OK" : "NO EVENT")")
+        ok = ok && sseOK
+        if ok { print("Doctor: OK"); exit(0) } else { fputs("Doctor: some checks failed\n", stderr); exit(1) }
+    }
     static func runServe(args: inout [String]) {
         var port: Int = 53127
         var noAuth = false
@@ -1046,6 +1123,26 @@ func loadOpenAPI(path: String) -> Data? {
         if fm.fileExists(atPath: c) { return try? Data(contentsOf: URL(fileURLWithPath: c)) }
     }
     return nil
+}
+
+// Offline-friendly docs fallback HTML
+func docsLiteHTML() -> String {
+    return """
+    <!doctype html><html><head><meta charset=\"utf-8\"><title>Tutor Serve API (Lite)</title>
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
+    <style>body{font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:1rem} pre{white-space:pre-wrap;word-wrap:break-word;background:#f6f8fa;padding:1rem;border-radius:8px}</style>
+    </head><body>
+    <h1>Tutor Serve API (Lite)</h1>
+    <p>This minimal view fetches the OpenAPI spec served by the CLI and renders it as text. Use <code>/docs</code> or <code>/redoc</code> for full UI (requires CDN access). If those fail, this page still works offline.</p>
+    <pre id=\"spec\">Loading /openapi.yaml ...</pre>
+    <script>
+    fetch('/openapi.yaml')
+      .then(r=>r.text())
+      .then(t=>{document.getElementById('spec').textContent=t})
+      .catch(e=>{document.getElementById('spec').textContent='Failed to load: '+e});
+    </script>
+    </body></html>
+    """
 }
 
 // Build a summary from status + events files (mirrors --json-summary output)
