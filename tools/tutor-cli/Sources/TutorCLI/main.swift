@@ -4,7 +4,7 @@ import Dispatch
 import Darwin
 #endif
 #if canImport(Network)
-import Network
+@preconcurrency import Network
 #endif
 
 struct CLI {
@@ -251,9 +251,9 @@ struct TutorCLI {
             midi?.sendEvent(type: type, payload: obj)
         }
 
-        func handle(line: String) {
+        let handle: @Sendable (String) -> Void = { sLine in
             // Basic phase detection for status
-            let s = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            let s = sLine.trimmingCharacters(in: .whitespacesAndNewlines)
             if s.isEmpty { return }
             if s.contains("Fetching") { phase = "fetching"; reporter.set(status: "Fetching packages") }
             else if s.contains("Updating") { phase = "updating"; reporter.set(status: "Updating dependencies") }
@@ -323,13 +323,13 @@ struct TutorCLI {
             let data = fh.availableData
             if data.isEmpty { return }
             if echoOutput { FileHandle.standardOutput.write(data) }
-            if let text = String(data: data, encoding: .utf8) { text.split(separator: "\n", omittingEmptySubsequences: false).forEach { handle(line: String($0)) } }
+            if let text = String(data: data, encoding: .utf8) { text.split(separator: "\n", omittingEmptySubsequences: false).forEach { handle(String($0)) } }
         }
         errHandle.readabilityHandler = { fh in
             let data = fh.availableData
             if data.isEmpty { return }
             if echoOutput { FileHandle.standardError.write(data) }
-            if let text = String(data: data, encoding: .utf8) { text.split(separator: "\n", omittingEmptySubsequences: false).forEach { handle(line: String($0)) } }
+            if let text = String(data: data, encoding: .utf8) { text.split(separator: "\n", omittingEmptySubsequences: false).forEach { handle(String($0)) } }
         }
 
         do {
@@ -385,11 +385,11 @@ func writeFile(_ path: String, _ content: String) throws {
 
 // MARK: - Live Progress Reporter
 
-final class ProgressReporter {
+final class ProgressReporter: @unchecked Sendable {
     private let enabled: Bool
     private let title: String
     private var timer: DispatchSourceTimer?
-    private var start = Date()
+    private var startTime = Date()
     private var lastStatus = "Starting"
     private var spinnerIndex = 0
     private let spinnerFrames = ["⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧","⠇","⠏"]
@@ -410,7 +410,7 @@ final class ProgressReporter {
 
     func start() {
         guard enabled else { return }
-        start = Date()
+        startTime = Date()
         fputs("\(title)…\n", stderr)
         let t = DispatchSource.makeTimerSource(queue: .global())
         t.schedule(deadline: .now(), repeating: .milliseconds(200))
@@ -433,7 +433,7 @@ final class ProgressReporter {
     }
 
     private func tick() {
-        let elapsed = Int(Date().timeIntervalSince(start))
+        let elapsed = Int(Date().timeIntervalSince(startTime))
         let frame = spinnerFrames[spinnerIndex % spinnerFrames.count]
         spinnerIndex += 1
         // Phase-based baseline percent when no compile ticks
@@ -455,7 +455,7 @@ final class ProgressReporter {
         timer?.cancel()
         if isTTY { fputs("\r\u{001B}[2K", stderr) }
         if final {
-            let e = elapsed ?? Date().timeIntervalSince(start)
+            let e = elapsed ?? Date().timeIntervalSince(startTime)
             let fmt = String(format: "%.2f", e)
             fputs("✓ \(title) completed in \(fmt)s\n", stderr)
         }
@@ -852,7 +852,7 @@ final class LocalHTTPServer {
         for (k, v) in hdrs { head += "\(k): \(v)\r\n" }
         head += "\r\n"
         let out = Data(head.utf8) + body
-        conn.send(content: out, completion: .contentProcessed { _ in self.close(conn) })
+        conn.send(content: out, completion: .contentProcessed { [weak self] _ in self?.close(conn) })
     }
 
     private func sse(conn: NWConnection) {
@@ -943,7 +943,7 @@ final class LocalHTTPServer {
         let bindRes = withUnsafePointer(to: &addr) {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, len) }
         }
-        guard bindRes == 0, listen(fd, 8) == 0 else { close(fd); throw ServeError.failedToBind }
+        guard bindRes == 0, listen(fd, 8) == 0 else { _ = Darwin.close(fd); throw ServeError.failedToBind }
         let q = DispatchQueue.global()
         q.async {
             while true {
