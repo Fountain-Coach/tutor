@@ -29,6 +29,8 @@ Or install via the CLI itself (after building it once):
   - `--no-progress` to disable the live status line
   - `--quiet` to suppress Swift output and show only status
   - `--json-summary` to emit a final JSON summary to stdout (pair with `--quiet` for machine use)
+  - `--midi` to emit events as MIDI SysEx on a virtual source (macOS)
+  - `--midi-virtual-name <name>` to name the virtual MIDI source (default `TutorCLI`)
   - Auto-parallelism: if `--jobs/-j` is not provided, uses CPU cores
   - `--` to pass flags to underlying `swift` (e.g., `-- -c release`)
 
@@ -44,6 +46,14 @@ Or install via the CLI itself (after building it once):
 - Control files:
   - `--no-status-file` to skip writing `status.json`
   - `--status-file <path>` and `--event-file <path>` to override defaults
+
+## MIDI Output (Experimental)
+
+- macOS only: the CLI can expose a virtual MIDI source and send each event as a compact SysEx message (manufacturer ID 0x7D).
+- Enable: `tutor build --midi` (or with any subcommand).
+- Connect your DAW or MIDI monitor to the virtual port (default `TutorCLI`).
+- Customize name: `--midi-virtual-name "TutorCLI-Status"`.
+- Payload: a truncated JSON blob inside SysEx for status, warnings, errors, and final summary.
 
 ## Error Taxonomy & Hints
 

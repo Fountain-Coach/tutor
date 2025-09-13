@@ -8,6 +8,11 @@ let package = Package(
         .executable(name: "tutor", targets: ["TutorCLI"])
     ],
     targets: [
-        .executableTarget(name: "TutorCLI")
+        .executableTarget(
+            name: "TutorCLI",
+            linkerSettings: [
+                .linkedFramework("CoreMIDI", .when(platforms: [.macOS]))
+            ]
+        )
     ]
 )

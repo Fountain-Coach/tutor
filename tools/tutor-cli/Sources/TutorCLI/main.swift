@@ -41,9 +41,9 @@ struct TutorCLI {
 
         Commands:
           scaffold   --repo <path> --app <Name> [--bundle-id <id>]
-          build      [--dir <path>] [--verbose] [--no-progress] [--quiet] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift build args>]
-          run        [--dir <path>] [--verbose] [--no-progress] [--quiet] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift run args>]
-          test       [--dir <path>] [--verbose] [--no-progress] [--quiet] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift test args>]
+          build      [--dir <path>] [--verbose] [--no-progress] [--quiet] [--json-summary] [--midi] [--midi-virtual-name <name>] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift build args>]
+          run        [--dir <path>] [--verbose] [--no-progress] [--quiet] [--json-summary] [--midi] [--midi-virtual-name <name>] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift run args>]
+          test       [--dir <path>] [--verbose] [--no-progress] [--quiet] [--json-summary] [--midi] [--midi-virtual-name <name>] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift test args>]
           status     [--dir <path>] [--json] [--watch]
 
         Examples:
@@ -78,6 +78,8 @@ struct TutorCLI {
         var statusFileOverride: String? = nil
         var eventFileOverride: String? = nil
         var jsonSummary = false
+        var midiEnabled = false
+        var midiName: String? = nil
         if let idx = args.firstIndex(of: "--verbose") { verbose = true; args.remove(at: idx) }
         if let idx = args.firstIndex(of: "-v") { verbose = true; args.remove(at: idx) }
         if let idx = args.firstIndex(of: "--no-progress") { showProgress = false; args.remove(at: idx) }
@@ -86,6 +88,8 @@ struct TutorCLI {
         if let idx = args.firstIndex(of: "--status-file"), idx + 1 < args.count { statusFileOverride = args[idx+1]; args.removeSubrange(idx...(idx+1)) }
         if let idx = args.firstIndex(of: "--event-file"), idx + 1 < args.count { eventFileOverride = args[idx+1]; args.removeSubrange(idx...(idx+1)) }
         if let idx = args.firstIndex(of: "--json-summary") { jsonSummary = true; args.remove(at: idx) }
+        if let idx = args.firstIndex(of: "--midi") { midiEnabled = true; args.remove(at: idx) }
+        if let idx = args.firstIndex(of: "--midi-virtual-name"), idx + 1 < args.count { midiName = args[idx+1]; args.removeSubrange(idx...(idx+1)) }
 
         let (dir, pass) = parseDir(args: &args)
         let moduleCache = (dir as NSString).appendingPathComponent(".modulecache")
@@ -127,7 +131,9 @@ struct TutorCLI {
             statusFile: statusPath,
             eventFile: eventPath,
             command: cmd,
-            jsonSummary: jsonSummary
+            jsonSummary: jsonSummary,
+            midiEnabled: midiEnabled,
+            midiName: midiName
         )
         if code != 0 { exit(Int32(code)) }
     }
@@ -181,7 +187,9 @@ struct TutorCLI {
                            statusFile: String?,
                            eventFile: String?,
                            command: String,
-                           jsonSummary: Bool) -> Int32 {
+                           jsonSummary: Bool,
+                           midiEnabled: Bool,
+                           midiName: String?) -> Int32 {
         let task = Process()
         task.executableURL = URL(fileURLWithPath: launchPath)
         task.arguments = args
@@ -197,6 +205,7 @@ struct TutorCLI {
 
         let start = Date()
         let reporter = ProgressReporter(enabled: showProgress, title: title)
+        let midi = midiEnabled ? MIDIBridge.make(name: midiName ?? "TutorCLI") : nil
 
         var phase = "starting"
         var errors: [[String: Any]] = []
@@ -220,6 +229,7 @@ struct TutorCLI {
             ]
             if final { obj["final"] = true; obj["exitCode"] = exitCode ?? 0; obj["errors"] = errors; obj["warnings"] = warnings }
             writeJSONAtomic(path: statusFile, object: obj)
+            midi?.sendEvent(type: final ? "status-final" : "status", payload: obj)
         }
 
         func writeEvent(_ type: String, _ payload: [String: Any]) {
@@ -228,6 +238,7 @@ struct TutorCLI {
             obj["type"] = type
             obj["ts"] = ISO8601DateFormatter().string(from: Date())
             appendNDJSON(path: eventFile, object: obj)
+            midi?.sendEvent(type: type, payload: obj)
         }
 
         func handle(line: String) {
@@ -332,6 +343,7 @@ struct TutorCLI {
             if let data = try? JSONSerialization.data(withJSONObject: summary, options: [.prettyPrinted]), let text = String(data: data, encoding: .utf8) {
                 print(text)
             }
+            midi?.sendEvent(type: "summary", payload: summary)
         }
         return code
     }
@@ -410,6 +422,55 @@ final class ProgressReporter {
         }
     }
 }
+
+// MARK: - MIDI Bridge (optional)
+
+#if canImport(CoreMIDI)
+import CoreMIDI
+final class MIDIBridge {
+    private var client = MIDIClientRef()
+    private var source = MIDIEndpointRef()
+    private let jsonMax = 180 // keep SysEx small
+    init?(name: String) {
+        var cl = MIDIClientRef()
+        if MIDIClientCreateWithBlock(name as CFString, &cl, nil) != noErr { return nil }
+        client = cl
+        var src = MIDIEndpointRef()
+        if MIDISourceCreate(client, name as CFString, &src) != noErr { return nil }
+        source = src
+    }
+    static func make(name: String) -> MIDIBridge? { MIDIBridge(name: name) }
+    func sendEvent(type: String, payload: [String: Any]) {
+        var obj = payload
+        obj["evt"] = type
+        guard let data = try? JSONSerialization.data(withJSONObject: obj, options: []), !data.isEmpty else { return }
+        let clipped = Data(data.prefix(jsonMax))
+        var bytes = [UInt8](repeating: 0, count: clipped.count + 3)
+        bytes[0] = 0xF0 // SysEx start
+        bytes[1] = 0x7D // Non-commercial manufacturer ID
+        // copy JSON (7-bit safe ASCII expected)
+        for (i, b) in clipped.enumerated() { bytes[i+2] = b & 0x7F }
+        bytes[bytes.count - 1] = 0xF7 // SysEx end
+        send(bytes: bytes)
+    }
+    private func send(bytes: [UInt8]) {
+        // Build packet list
+        let capacity = 512
+        let plPointer = UnsafeMutablePointer<MIDIPacketList>.allocate(capacity: 1)
+        defer { plPointer.deallocate() }
+        var packet = MIDIPacketListInit(plPointer)
+        packet = MIDIPacketListAdd(plPointer, capacity, packet, 0, bytes.count, bytes)
+        guard packet != nil else { return }
+        MIDIReceived(source, plPointer)
+    }
+    deinit { if source != 0 { MIDIEndpointDispose(source) }; if client != 0 { MIDIClientDispose(client) } }
+}
+#else
+final class MIDIBridge {
+    static func make(name: String) -> MIDIBridge? { nil }
+    func sendEvent(type: String, payload: [String: Any]) {}
+}
+#endif
 
 // MARK: - Machine IO helpers
 
