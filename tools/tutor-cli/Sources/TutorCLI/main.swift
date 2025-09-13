@@ -816,6 +816,15 @@ final class LocalHTTPServer {
             } else {
                 respond(conn, status: 404, headers: ["Content-Type": "application/json"], body: Data("{\"error\":\"no status\"}".utf8))
             }
+        case ("GET", "/openapi.yaml"):
+            if let data = loadOpenAPI(path: "tutor-serve.yaml") { respond(conn, status: 200, headers: ["Content-Type": "application/yaml"], body: data) }
+            else { respond(conn, status: 500, headers: ["Content-Type": "text/plain"], body: Data("missing openapi".utf8)) }
+        case ("GET", "/docs"), ("GET", "/docs/"):
+            if let data = loadOpenAPI(path: "index.html") { respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: data) }
+            else { respond(conn, status: 500, headers: ["Content-Type": "text/plain"], body: Data("missing docs".utf8)) }
+        case ("GET", "/redoc"):
+            if let data = loadOpenAPI(path: "redoc.html") { respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: data) }
+            else { respond(conn, status: 500, headers: ["Content-Type": "text/plain"], body: Data("missing docs".utf8)) }
         case ("GET", "/summary"):
             let sum = makeSummary(statusPath: statusPath, eventsPath: eventsPath)
             if let data = try? JSONSerialization.data(withJSONObject: sum, options: [.prettyPrinted]) {
@@ -981,6 +990,17 @@ final class LocalHTTPServer {
         }
         timer.resume()
     }
+}
+
+// Load embedded OpenAPI resources from SPM bundle
+func loadOpenAPI(path: String) -> Data? {
+    #if SWIFT_PACKAGE
+    let bundle = Bundle.module
+    if let url = bundle.url(forResource: path, withExtension: nil, subdirectory: "OpenAPI") {
+        return try? Data(contentsOf: url)
+    }
+    #endif
+    return nil
 }
 
 // Build a summary from status + events files (mirrors --json-summary output)

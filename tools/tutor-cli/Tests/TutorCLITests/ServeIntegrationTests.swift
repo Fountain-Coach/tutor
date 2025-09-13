@@ -73,4 +73,29 @@ final class ServeIntegrationTests: XCTestCase {
         await fulfillment(of: [exp], timeout: 5.0)
         task.cancel()
     }
+
+    func testServeOpenAPIAndDocs() async throws {
+        guard ProcessInfo.processInfo.environment["TUTOR_INTEGRATION"] == "1" else {
+            throw XCTSkip("Set TUTOR_INTEGRATION=1 to run integration serve tests")
+        }
+        let tmpDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
+        let statusPath = tmpDir.appendingPathComponent("status.json").path
+        let eventsPath = tmpDir.appendingPathComponent("events.ndjson").path
+        _ = writeJSONAtomic(path: statusPath, object: ["title": "Docs", "command": "build", "phase": "resolving", "elapsed": 0, "exitCode": 0])
+        _ = appendNDJSON(path: eventsPath, object: ["type": "log", "line": "init"]) 
+
+        let server = LocalHTTPServer(port: 0, statusPath: statusPath, eventsPath: eventsPath, token: nil, midiName: nil, socketPath: nil)
+        let port = try server.start()
+
+        let yurl = URL(string: "http://127.0.0.1:\(port)/openapi.yaml")!
+        let (ydata, yresp) = try await URLSession.shared.data(from: yurl)
+        XCTAssertEqual((yresp as? HTTPURLResponse)?.statusCode, 200)
+        XCTAssertTrue(String(data: ydata, encoding: .utf8)?.contains("openapi:") == true)
+
+        let durl = URL(string: "http://127.0.0.1:\(port)/docs")!
+        let (ddata, dresp) = try await URLSession.shared.data(from: durl)
+        XCTAssertEqual((dresp as? HTTPURLResponse)?.statusCode, 200)
+        XCTAssertTrue(String(data: ddata, encoding: .utf8)?.contains("Swagger UI") == true)
+    }
 }

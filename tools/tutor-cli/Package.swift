@@ -17,6 +17,9 @@ let package = Package(
             dependencies: [
                 .product(name: "SSEOverMIDI", package: "the-fountainai")
             ],
+            resources: [
+                .process("OpenAPI")
+            ],
             linkerSettings: [
                 .linkedFramework("CoreMIDI", .when(platforms: [.macOS]))
             ]
