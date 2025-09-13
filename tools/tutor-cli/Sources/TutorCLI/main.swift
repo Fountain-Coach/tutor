@@ -50,7 +50,7 @@ struct TutorCLI {
           run        [--dir <path>] [--verbose] [--no-progress] [--quiet] [--json-summary] [--midi] [--midi-virtual-name <name>] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift run args>]
           test       [--dir <path>] [--verbose] [--no-progress] [--quiet] [--json-summary] [--midi] [--midi-virtual-name <name>] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift test args>]
           status     [--dir <path>] [--json] [--watch]
-          serve      [--dir <path>] [--port <n>|--port 0] [--no-auth]
+          serve      [--dir <path>] [--port <n>|--port 0] [--no-auth] [--dev] [--midi] [--midi-virtual-name <name>]
 
         Examples:
           tutor build --dir tutorials/01-hello-fountainai
@@ -585,8 +585,14 @@ extension TutorCLI {
     static func runServe(args: inout [String]) {
         var port: Int = 53127
         var noAuth = false
+        var dev = false
+        var midiEnabled = false
+        var midiName: String? = nil
         if let idx = args.firstIndex(of: "--port"), idx + 1 < args.count, let p = Int(args[idx+1]) { port = p; args.removeSubrange(idx...(idx+1)) }
         if let idx = args.firstIndex(of: "--no-auth") { noAuth = true; args.remove(at: idx) }
+        if let idx = args.firstIndex(of: "--dev") { dev = true; args.remove(at: idx) }
+        if let idx = args.firstIndex(of: "--midi") { midiEnabled = true; args.remove(at: idx) }
+        if let idx = args.firstIndex(of: "--midi-virtual-name"), idx + 1 < args.count { midiName = args[idx+1]; args.removeSubrange(idx...(idx+1)) }
         let (dir, _) = parseDir(args: &args)
 
         let tutorDir = (dir as NSString).appendingPathComponent(".tutor")
@@ -596,7 +602,7 @@ extension TutorCLI {
         let tokenPath = (tutorDir as NSString).appendingPathComponent("token")
 
         var token: String? = nil
-        if !noAuth {
+        if !(noAuth || dev) {
             token = (try? String(contentsOfFile: tokenPath))?.trimmingCharacters(in: .whitespacesAndNewlines)
             if token == nil || token!.isEmpty {
                 token = UUID().uuidString.replacingOccurrences(of: "-", with: "")
@@ -604,11 +610,11 @@ extension TutorCLI {
             }
         }
 
-        let server = LocalHTTPServer(port: port, statusPath: statusPath, eventsPath: eventsPath, token: token)
+        let server = LocalHTTPServer(port: port, statusPath: statusPath, eventsPath: eventsPath, token: token, midiName: midiEnabled ? (midiName ?? "TutorCLI") : nil)
         do {
             let actualPort = try server.start()
             if let token { print("Serving on http://127.0.0.1:\(actualPort)  token=\(token)") }
-            else { print("Serving on http://127.0.0.1:\(actualPort)") }
+            else { print("Serving on http://127.0.0.1:\(actualPort) (auth disabled)") }
             dispatchMain()
         } catch {
             fputs("Failed to start server: \(error)\n", stderr)
@@ -622,11 +628,13 @@ final class LocalHTTPServer {
     private let statusPath: String
     private let eventsPath: String
     private let token: String?
-    init(port: Int, statusPath: String, eventsPath: String, token: String?) {
+    private let midi: MIDIBridge?
+    init(port: Int, statusPath: String, eventsPath: String, token: String?, midiName: String?) {
         self.port = port
         self.statusPath = statusPath
         self.eventsPath = eventsPath
         self.token = token
+        if let name = midiName { self.midi = MIDIBridge.make(name: name) } else { self.midi = nil }
     }
     enum ServeError: Error { case failedToBind }
     func start() throws -> Int {
@@ -724,6 +732,15 @@ final class LocalHTTPServer {
             } else {
                 respond(conn, status: 404, headers: ["Content-Type": "application/json"], body: Data("{\"error\":\"no status\"}".utf8))
             }
+        case ("GET", "/summary"):
+            let sum = makeSummary(statusPath: statusPath, eventsPath: eventsPath)
+            if let data = try? JSONSerialization.data(withJSONObject: sum, options: [.prettyPrinted]) {
+                respond(conn, status: 200, headers: ["Content-Type": "application/json"], body: data)
+                // Also broadcast via MIDI
+                self.midi?.sendEvent(type: "summary", payload: sum)
+            } else {
+                respond(conn, status: 500, headers: ["Content-Type": "application/json"], body: Data("{\"error\":\"cannot summarize\"}".utf8))
+            }
         case ("GET", "/events"):
             sse(conn: conn)
         default:
@@ -745,8 +762,13 @@ final class LocalHTTPServer {
     private func sse(conn: NWConnection) {
         let head = "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-cache\r\nConnection: keep-alive\r\n\r\n"
         conn.send(content: Data(head.utf8), completion: .contentProcessed { _ in })
-        // Send a comment to open the stream
-        self.sendSSE(conn: conn, event: nil, data: ":ok\n\n")
+        // Send initial status if available
+        if let data = FileManager.default.contents(atPath: statusPath), let text = String(data: data, encoding: .utf8) {
+            self.sendSSE(conn: conn, event: "status", data: text + "\n\n")
+        } else {
+            // Send a comment to open the stream
+            self.sendSSE(conn: conn, event: nil, data: ":ok\n\n")
+        }
 
         // Start polling the events file
         let url = URL(fileURLWithPath: eventsPath)
@@ -769,8 +791,13 @@ final class LocalHTTPServer {
                             let s = String(line)
                             // Peek type if present
                             var evt = "log"
-                            if let obj = try? JSONSerialization.jsonObject(with: Data(s.utf8)) as? [String: Any], let t = obj["type"] as? String { evt = t }
-                            self.sendSSE(conn: conn, event: evt, data: s + "\n\n")
+                            if let obj = try? JSONSerialization.jsonObject(with: Data(s.utf8)) as? [String: Any], let t = obj["type"] as? String {
+                                evt = t
+                                self.sendSSE(conn: conn, event: evt, data: s + "\n\n")
+                                self.midi?.sendEvent(type: evt, payload: obj)
+                            } else {
+                                self.sendSSE(conn: conn, event: evt, data: s + "\n\n")
+                            }
                         }
                     }
                 }
@@ -799,6 +826,49 @@ final class LocalHTTPServer {
 
     private func close(_ conn: NWConnection) { conn.cancel() }
     #endif
+}
+
+// Build a summary from status + events files (mirrors --json-summary output)
+func makeSummary(statusPath: String, eventsPath: String) -> [String: Any] {
+    var status: [String: Any] = [:]
+    if let data = FileManager.default.contents(atPath: statusPath), let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] { status = obj }
+    let title = (status["title"] as? String) ?? "Work"
+    let command = (status["command"] as? String) ?? ""
+    let phase = (status["phase"] as? String) ?? ""
+    let elapsed = (status["elapsed"] as? Int) ?? 0
+    let exitCode = (status["exitCode"] as? Int) ?? 0
+
+    var errors: [[String: Any]] = (status["errors"] as? [[String: Any]]) ?? []
+    var warnings: [[String: Any]] = (status["warnings"] as? [[String: Any]]) ?? []
+
+    // Augment with any events in NDJSON
+    if let data = FileManager.default.contents(atPath: eventsPath), let text = String(data: data, encoding: .utf8) {
+        for line in text.split(separator: "\n", omittingEmptySubsequences: true) {
+            guard let obj = try? JSONSerialization.jsonObject(with: Data(String(line).utf8)) as? [String: Any] else { continue }
+            if let e = obj["error"] as? [String: Any] { errors.append(e) }
+            if let w = obj["warning"] as? [String: Any] { warnings.append(w) }
+        }
+    }
+
+    let sawTestFailure = false // could be derived by scanning events for test fails
+    let sawLinkerError = errors.contains { ($0["message"] as? String)?.localizedCaseInsensitiveContains("linker command failed") == true || ($0["message"] as? String)?.localizedCaseInsensitiveContains("Undefined symbols") == true }
+    let sawResolveError = errors.contains { ($0["message"] as? String)?.localizedCaseInsensitiveContains("resolve") == true }
+    let sawNetworkError = errors.contains { ($0["message"] as? String)?.localizedCaseInsensitiveContains("network") == true || ($0["message"] as? String)?.localizedCaseInsensitiveContains("timed out") == true }
+
+    let (category, hint) = categorizeFailure(command: command, phase: phase, code: Int32(exitCode), sawTestFailure: sawTestFailure, sawLinkerError: sawLinkerError, sawResolveError: sawResolveError, sawNetworkError: sawNetworkError, errors: errors)
+    return [
+        "title": title,
+        "command": command,
+        "phase": phase,
+        "elapsed": elapsed,
+        "exitCode": exitCode,
+        "category": category,
+        "hint": hint,
+        "errorCount": errors.count,
+        "warningCount": warnings.count,
+        "errors": errors,
+        "warnings": warnings
+    ]
 }
 
 func insertElement(in text: String, arrayName: String, element: String) -> String {

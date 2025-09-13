@@ -57,6 +57,9 @@ Or install via the CLI itself (after building it once):
   - `GET /health` → `{ "ok": true }`
   - `GET /status` → contents of `status.json`
   - `GET /events` → Server-Sent Events (SSE) stream; emits `event: <type>` with `data: {…}` per NDJSON entry.
+  - `GET /summary` → on-demand JSON summary (same structure as `--json-summary`)
+- Dev profile: add `--dev` to disable auth locally. Otherwise, a token in `.tutor/token` is required.
+- Optional MIDI mirroring from server: `--midi [--midi-virtual-name <name>]` to broadcast events as SysEx via a virtual MIDI source.
 
 ## MIDI Output (Experimental)
 
