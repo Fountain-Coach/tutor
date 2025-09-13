@@ -11,6 +11,13 @@ Packages/
 Package.resolved
 .package.resolved
 
+# Local vendor deps and caches
+tools/_deps/
+.cache/
+
+# Tutor runtime outputs
+**/.tutor/
+
 # Xcode
 *.xcodeproj
 *.xcworkspace
