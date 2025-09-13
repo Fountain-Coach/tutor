@@ -8,8 +8,8 @@ let package = Package(
         .executable(name: "tutor", targets: ["TutorCLI"])
     ],
     dependencies: [
-        // Reuse FountainAI MIDI stack when available
-        .package(url: "https://github.com/Fountain-Coach/the-fountainai.git", branch: "main")
+        // Prefer local checkout if present to avoid network in tests
+        .package(path: "../_deps/the-fountainai")
     ],
     targets: [
         .executableTarget(
@@ -20,6 +20,11 @@ let package = Package(
             linkerSettings: [
                 .linkedFramework("CoreMIDI", .when(platforms: [.macOS]))
             ]
+        ),
+        .testTarget(
+            name: "TutorCLITests",
+            dependencies: ["TutorCLI"],
+            path: "Tests/TutorCLITests"
         )
     ]
 )
