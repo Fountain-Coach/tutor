@@ -755,8 +755,8 @@ final class LocalHTTPServer: @unchecked Sendable {
         l.newConnectionHandler = { [weak self] conn in self?.setupConnection(conn) }
         l.start(queue: .main)
         Thread.sleep(forTimeInterval: 0.2)
-        let p = l.port?.rawValue ?? UInt16(self.port)
-        return Int(p)
+        let portValue = l.port?.rawValue ?? UInt16(self.port)
+        return Int(portValue)
     }
 
     private func setupConnection(_ conn: NWConnection) {
