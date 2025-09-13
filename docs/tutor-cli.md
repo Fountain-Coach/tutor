@@ -47,6 +47,17 @@ Or install via the CLI itself (after building it once):
   - `--no-status-file` to skip writing `status.json`
   - `--status-file <path>` and `--event-file <path>` to override defaults
 
+## Local Server (HTTP + SSE)
+
+- Start a local endpoint to query live status and subscribe to events without file polling:
+  - `tutor serve [--dir <path>] [--port <n>|--port 0] [--no-auth]`
+- Default bind: `127.0.0.1:<port>`; when `--port 0`, the OS picks a random port.
+- A bearer token is generated in `<tutorial>/.tutor/token` and required unless `--no-auth` is passed.
+- Endpoints:
+  - `GET /health` → `{ "ok": true }`
+  - `GET /status` → contents of `status.json`
+  - `GET /events` → Server-Sent Events (SSE) stream; emits `event: <type>` with `data: {…}` per NDJSON entry.
+
 ## MIDI Output (Experimental)
 
 - macOS only: the CLI can expose a virtual MIDI source and send each event as a compact SysEx message (manufacturer ID 0x7D), compatible with FountainAI's `SSEOverMIDI`.

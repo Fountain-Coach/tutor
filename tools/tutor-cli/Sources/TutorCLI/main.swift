@@ -3,9 +3,12 @@ import Dispatch
 #if canImport(Darwin)
 import Darwin
 #endif
+#if canImport(Network)
+import Network
+#endif
 
 struct CLI {
-    enum Command: String { case scaffold, build, run, test, status, install, help }
+    enum Command: String { case scaffold, build, run, test, status, serve, install, help }
 }
 
 @main
@@ -28,6 +31,8 @@ struct TutorCLI {
             runSwift(cmd: "test", args: &rest)
         case .status:
             runStatus(args: &rest)
+        case .serve:
+            runServe(args: &rest)
         case .install:
             runInstall(args: &rest)
         case .help:
@@ -45,6 +50,7 @@ struct TutorCLI {
           run        [--dir <path>] [--verbose] [--no-progress] [--quiet] [--json-summary] [--midi] [--midi-virtual-name <name>] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift run args>]
           test       [--dir <path>] [--verbose] [--no-progress] [--quiet] [--json-summary] [--midi] [--midi-virtual-name <name>] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift test args>]
           status     [--dir <path>] [--json] [--watch]
+          serve      [--dir <path>] [--port <n>|--port 0] [--no-auth]
 
         Examples:
           tutor build --dir tutorials/01-hello-fountainai
@@ -571,6 +577,228 @@ extension TutorCLI {
             printOnce()
         }
     }
+}
+
+// MARK: - Serve (HTTP + SSE)
+
+extension TutorCLI {
+    static func runServe(args: inout [String]) {
+        var port: Int = 53127
+        var noAuth = false
+        if let idx = args.firstIndex(of: "--port"), idx + 1 < args.count, let p = Int(args[idx+1]) { port = p; args.removeSubrange(idx...(idx+1)) }
+        if let idx = args.firstIndex(of: "--no-auth") { noAuth = true; args.remove(at: idx) }
+        let (dir, _) = parseDir(args: &args)
+
+        let tutorDir = (dir as NSString).appendingPathComponent(".tutor")
+        try? FileManager.default.createDirectory(atPath: tutorDir, withIntermediateDirectories: true)
+        let statusPath = (tutorDir as NSString).appendingPathComponent("status.json")
+        let eventsPath = (tutorDir as NSString).appendingPathComponent("events.ndjson")
+        let tokenPath = (tutorDir as NSString).appendingPathComponent("token")
+
+        var token: String? = nil
+        if !noAuth {
+            token = (try? String(contentsOfFile: tokenPath))?.trimmingCharacters(in: .whitespacesAndNewlines)
+            if token == nil || token!.isEmpty {
+                token = UUID().uuidString.replacingOccurrences(of: "-", with: "")
+                try? token!.write(to: URL(fileURLWithPath: tokenPath), atomically: true, encoding: .utf8)
+            }
+        }
+
+        let server = LocalHTTPServer(port: port, statusPath: statusPath, eventsPath: eventsPath, token: token)
+        do {
+            let actualPort = try server.start()
+            if let token { print("Serving on http://127.0.0.1:\(actualPort)  token=\(token)") }
+            else { print("Serving on http://127.0.0.1:\(actualPort)") }
+            dispatchMain()
+        } catch {
+            fputs("Failed to start server: \(error)\n", stderr)
+            exit(1)
+        }
+    }
+}
+
+final class LocalHTTPServer {
+    private let port: Int
+    private let statusPath: String
+    private let eventsPath: String
+    private let token: String?
+    init(port: Int, statusPath: String, eventsPath: String, token: String?) {
+        self.port = port
+        self.statusPath = statusPath
+        self.eventsPath = eventsPath
+        self.token = token
+    }
+    enum ServeError: Error { case failedToBind }
+    func start() throws -> Int {
+        #if canImport(Network)
+        return try startNW()
+        #else
+        return try startPOSIX()
+        #endif
+    }
+
+    // Fallback very tiny POSIX server not implemented for brevity in non-Apple platforms
+    private func startPOSIX() throws -> Int { throw ServeError.failedToBind }
+
+    #if canImport(Network)
+    private var listener: NWListener?
+    private var connections: [ObjectIdentifier: NWConnection] = [:]
+    private func startNW() throws -> Int {
+        let params = NWParameters.tcp
+        let p: NWEndpoint.Port = (port == 0 ? .any : NWEndpoint.Port(rawValue: UInt16(port))!)
+        let l = try NWListener(using: params, on: p)
+        listener = l
+        l.newConnectionHandler = { [weak self] conn in
+            self?.setupConnection(conn)
+        }
+        var actualPort: UInt16 = 0
+        l.stateUpdateHandler = { state in
+            switch state {
+            case .ready:
+                if let port = l.port?.rawValue { actualPort = port }
+            default:
+                break
+            }
+        }
+        l.start(queue: .main)
+        // Wait briefly for ready
+        let group = DispatchGroup(); group.enter()
+        DispatchQueue.global().asyncAfter(deadline: .now() + 0.2) { group.leave() }
+        group.wait()
+        return Int(actualPort == 0 ? UInt16(self.port) : actualPort)
+    }
+
+    private func setupConnection(_ conn: NWConnection) {
+        let id = ObjectIdentifier(conn)
+        connections[id] = conn
+        conn.stateUpdateHandler = { state in
+            if case .failed = state { self.connections.removeValue(forKey: id) }
+            if case .cancelled = state { self.connections.removeValue(forKey: id) }
+        }
+        conn.start(queue: .global())
+        receiveRequest(on: conn, buffer: Data())
+    }
+
+    private func receiveRequest(on conn: NWConnection, buffer: Data) {
+        conn.receive(minimumIncompleteLength: 1, maximumLength: 32 * 1024) { [weak self] data, _, isComplete, error in
+            guard let self else { return }
+            var buf = buffer
+            if let d = data { buf.append(d) }
+            if let error = error { self.close(conn); return }
+            if isComplete { self.close(conn); return }
+
+            if let range = buf.range(of: Data("\r\n\r\n".utf8)) {
+                let headerData = buf.subdata(in: 0..<range.lowerBound)
+                let bodyData = buf.subdata(in: range.upperBound..<buf.count)
+                self.handleRequest(conn: conn, headers: headerData, body: bodyData)
+            } else {
+                self.receiveRequest(on: conn, buffer: buf)
+            }
+        }
+    }
+
+    private func handleRequest(conn: NWConnection, headers: Data, body: Data) {
+        guard let head = String(data: headers, encoding: .utf8) else { return close(conn) }
+        let lines = head.split(separator: "\r\n", omittingEmptySubsequences: false)
+        guard let requestLine = lines.first else { return close(conn) }
+        let parts = requestLine.split(separator: " ")
+        guard parts.count >= 2 else { return close(conn) }
+        let method = String(parts[0])
+        let urlPath = String(parts[1])
+
+        var authOK = (token == nil)
+        if let token {
+            if let hdr = lines.first(where: { $0.lowercased().hasPrefix("authorization:") }) {
+                let v = hdr.split(separator: ":", maxSplits: 1).last.map(String.init) ?? ""
+                if v.lowercased().contains("bearer") && v.trimmingCharacters(in: .whitespaces).hasSuffix(token) { authOK = true }
+            }
+        }
+        if !authOK { return respond(conn, status: 401, headers: ["Content-Type": "application/json"], body: Data("{\"error\":\"unauthorized\"}".utf8)) }
+
+        switch (method, urlPath) {
+        case ("GET", "/health"):
+            respond(conn, status: 200, headers: ["Content-Type": "application/json"], body: Data("{\"ok\":true}".utf8))
+        case ("GET", "/status"):
+            if let data = FileManager.default.contents(atPath: statusPath) {
+                respond(conn, status: 200, headers: ["Content-Type": "application/json"], body: data)
+            } else {
+                respond(conn, status: 404, headers: ["Content-Type": "application/json"], body: Data("{\"error\":\"no status\"}".utf8))
+            }
+        case ("GET", "/events"):
+            sse(conn: conn)
+        default:
+            respond(conn, status: 404, headers: ["Content-Type": "application/json"], body: Data("{\"error\":\"not found\"}".utf8))
+        }
+    }
+
+    private func respond(_ conn: NWConnection, status: Int, headers: [String: String], body: Data) {
+        var head = "HTTP/1.1 \(status) \(status == 200 ? "OK" : "ERR")\r\n"
+        var hdrs = headers
+        hdrs["Content-Length"] = String(body.count)
+        hdrs["Connection"] = "close"
+        for (k, v) in hdrs { head += "\(k): \(v)\r\n" }
+        head += "\r\n"
+        let out = Data(head.utf8) + body
+        conn.send(content: out, completion: .contentProcessed { _ in self.close(conn) })
+    }
+
+    private func sse(conn: NWConnection) {
+        let head = "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-cache\r\nConnection: keep-alive\r\n\r\n"
+        conn.send(content: Data(head.utf8), completion: .contentProcessed { _ in })
+        // Send a comment to open the stream
+        self.sendSSE(conn: conn, event: nil, data: ":ok\n\n")
+
+        // Start polling the events file
+        let url = URL(fileURLWithPath: eventsPath)
+        var lastSize: UInt64 = 0
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: eventsPath), let n = attrs[.size] as? NSNumber { lastSize = n.uint64Value }
+        let timer = DispatchSource.makeTimerSource(queue: .global())
+        timer.schedule(deadline: .now(), repeating: .milliseconds(500))
+        timer.setEventHandler { [weak self] in
+            guard let self else { return }
+            guard let attrs = try? FileManager.default.attributesOfItem(atPath: self.eventsPath), let n = attrs[.size] as? NSNumber else { return }
+            let size = n.uint64Value
+            if size > lastSize {
+                // Read new bytes
+                if let h = try? FileHandle(forReadingFrom: url) {
+                    defer { try? h.close() }
+                    try? h.seek(toOffset: lastSize)
+                    if let data = try? h.readToEnd(), let text = String(data: data, encoding: .utf8) {
+                        for line in text.split(separator: "\n", omittingEmptySubsequences: false) {
+                            if line.isEmpty { continue }
+                            let s = String(line)
+                            // Peek type if present
+                            var evt = "log"
+                            if let obj = try? JSONSerialization.jsonObject(with: Data(s.utf8)) as? [String: Any], let t = obj["type"] as? String { evt = t }
+                            self.sendSSE(conn: conn, event: evt, data: s + "\n\n")
+                        }
+                    }
+                }
+                lastSize = size
+            }
+        }
+        timer.resume()
+        // Keep the connection open; if it fails, cancel timer
+        conn.stateUpdateHandler = { state in
+            switch state {
+            case .failed, .cancelled:
+                timer.cancel()
+            default: break
+            }
+        }
+    }
+
+    private func sendSSE(conn: NWConnection, event: String?, data: String) {
+        var payload = ""
+        if let e = event { payload += "event: \(e)\n" }
+        payload += "data: "
+        payload += data.replacingOccurrences(of: "\n", with: "\ndata: ")
+        if !payload.hasSuffix("\n\n") { payload += "\n\n" }
+        conn.send(content: Data(payload.utf8), completion: .contentProcessed { _ in })
+    }
+
+    private func close(_ conn: NWConnection) { conn.cancel() }
+    #endif
 }
 
 func insertElement(in text: String, arrayName: String, element: String) -> String {
