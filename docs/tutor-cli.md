@@ -49,11 +49,12 @@ Or install via the CLI itself (after building it once):
 
 ## MIDI Output (Experimental)
 
-- macOS only: the CLI can expose a virtual MIDI source and send each event as a compact SysEx message (manufacturer ID 0x7D).
+- macOS only: the CLI can expose a virtual MIDI source and send each event as a compact SysEx message (manufacturer ID 0x7D), compatible with FountainAI's `SSEOverMIDI`.
 - Enable: `tutor build --midi` (or with any subcommand).
 - Connect your DAW or MIDI monitor to the virtual port (default `TutorCLI`).
 - Customize name: `--midi-virtual-name "TutorCLI-Status"`.
 - Payload: a truncated JSON blob inside SysEx for status, warnings, errors, and final summary.
+ - Internals: when the FountainAI package is present, the CLI links `SSEOverMIDI`; otherwise it falls back to a CoreMIDI shim that emits the same wire format.
 
 ## Error Taxonomy & Hints
 
