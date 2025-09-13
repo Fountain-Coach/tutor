@@ -8,7 +8,7 @@ import Darwin
 #endif
 
 struct CLI {
-    enum Command: String { case scaffold, build, run, test, status, serve, doctor, install, help }
+    enum Command: String { case scaffold, build, run, test, status, serve, doctor, viewer, install, help }
 }
 
 struct TutorCLI {
@@ -34,6 +34,8 @@ struct TutorCLI {
             runServe(args: &rest)
         case .doctor:
             await runDoctor(args: &rest)
+        case .viewer:
+            runViewer(args: &rest)
         case .install:
             runInstall(args: &rest)
         case .help:
@@ -53,6 +55,8 @@ struct TutorCLI {
           status     [--dir <path>] [--json] [--watch]
           serve      [--dir <path>] [--port <n>|--port 0] [--no-auth] [--dev] [--socket <path>] [--open] [--midi] [--midi-virtual-name <name>]
           doctor     [--dir <path>]  (runs local server health checks)
+          viewer     [--dir <path>]  (launch native viewer for status/events)
+          viewer     [--dir <path>]  (launch native viewer for status/events)
 
         Examples:
           tutor build --dir tutorials/01-hello-fountainai
@@ -814,6 +818,30 @@ extension TutorCLI {
             fputs("Failed to start server: \(error)\n", stderr)
             exit(1)
         }
+    }
+}
+
+extension TutorCLI {
+    static func runViewer(args: inout [String]) {
+        let (dir, _) = parseDir(args: &args)
+        var env = ProcessInfo.processInfo.environment
+        env["TUTOR_DIR"] = dir
+        let viewerPath = (FileManager.default.currentDirectoryPath as NSString).appendingPathComponent("tools/teatro-viewer")
+        // Spawn: swift run --disable-sandbox (Teatro viewer)
+        let code = runProcess(launchPath: "/usr/bin/swift",
+                              args: ["run", "--disable-sandbox"],
+                              cwd: viewerPath,
+                              showProgress: true,
+                              title: "Viewer",
+                              echoOutput: true,
+                              statusFile: nil,
+                              eventFile: nil,
+                              command: "run",
+                              jsonSummary: false,
+                              ciMode: false,
+                              midiEnabled: false,
+                              midiName: nil)
+        if code != 0 { exit(code) }
     }
 }
 
