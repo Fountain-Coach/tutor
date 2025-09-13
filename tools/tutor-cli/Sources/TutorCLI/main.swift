@@ -928,10 +928,10 @@ final class LocalHTTPServer: @unchecked Sendable {
             if let data = loadOpenAPI(path: "tutor-serve.yaml") { respond(conn, status: 200, headers: ["Content-Type": "application/yaml"], body: data) }
             else { respond(conn, status: 500, headers: ["Content-Type": "text/plain"], body: Data("missing openapi".utf8)) }
         case ("GET", "/assets/swagger-ui.css"):
-            if let data = loadOpenAPI(path: "assets/swagger-ui.css") { respond(conn, status: 200, headers: ["Content-Type": "text/css"], body: data) }
+            if let data = loadOpenAPI(path: "assets/swagger-ui.css") { respond(conn, status: 200, headers: ["Content-Type": "text/css; charset=utf-8", "Cache-Control": "no-store"], body: data) }
             else { respond(conn, status: 404, headers: ["Content-Type": "text/plain"], body: Data("missing asset".utf8)) }
         case ("GET", "/assets/swagger-ui-bundle.js"):
-            if let data = loadOpenAPI(path: "assets/swagger-ui-bundle.js") { respond(conn, status: 200, headers: ["Content-Type": "application/javascript"], body: data) }
+            if let data = loadOpenAPI(path: "assets/swagger-ui-bundle.js") { respond(conn, status: 200, headers: ["Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store"], body: data) }
             else { respond(conn, status: 404, headers: ["Content-Type": "text/plain"], body: Data("missing asset".utf8)) }
         case ("GET", "/docs"), ("GET", "/docs/"):
             if let data = loadOpenAPI(path: "index.html") { respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: data) }
@@ -973,7 +973,7 @@ final class LocalHTTPServer: @unchecked Sendable {
             """
             respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: Data(html.utf8))
         case ("GET", "/assets/redoc.standalone.js"):
-            if let data = loadOpenAPI(path: "assets/redoc.standalone.js") { respond(conn, status: 200, headers: ["Content-Type": "application/javascript"], body: data) }
+            if let data = loadOpenAPI(path: "assets/redoc.standalone.js") { respond(conn, status: 200, headers: ["Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store"], body: data) }
             else { respond(conn, status: 404, headers: ["Content-Type": "text/plain"], body: Data("missing asset".utf8)) }
         case ("GET", "/summary"):
             let sum = makeSummary(statusPath: statusPath, eventsPath: eventsPath)
