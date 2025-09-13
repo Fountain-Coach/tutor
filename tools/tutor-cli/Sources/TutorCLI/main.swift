@@ -459,6 +459,9 @@ final class ProgressReporter: @unchecked Sendable {
         }
     }
 
+    // Test hook to drive coverage deterministically
+    func testTick() { tick() }
+
     func stop(final: Bool, elapsed: TimeInterval? = nil) {
         guard enabled else { return }
         timer?.cancel()
