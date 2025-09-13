@@ -15,6 +15,9 @@ let package = Package(
             resources: [
                 .process("OpenAPI")
             ],
+            swiftSettings: [
+                .unsafeFlags(["-parse-as-library"]) // allow @main with helper top-level decls
+            ],
             linkerSettings: [
                 .linkedFramework("CoreMIDI", .when(platforms: [.macOS]))
             ]

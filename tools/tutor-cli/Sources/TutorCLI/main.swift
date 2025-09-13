@@ -11,7 +11,6 @@ struct CLI {
     enum Command: String { case scaffold, build, run, test, status, serve, install, help }
 }
 
-@main
 struct TutorCLI {
     static func main() async {
         let args = Array(CommandLine.arguments.dropFirst())
@@ -216,105 +215,18 @@ struct TutorCLI {
         let start = Date()
         let reporter = ProgressReporter(enabled: showProgress, title: title)
         let midi = midiEnabled ? MIDIBridge.make(name: midiName ?? "TutorCLI") : nil
+        let ctx = RunContext(title: title,
+                             command: command,
+                             statusPath: statusFile,
+                             eventPath: eventFile,
+                             reporter: reporter,
+                             midi: midi,
+                             ciMode: ciMode,
+                             start: start)
 
-        var phase = "starting"
-        var errors: [[String: Any]] = []
-        var warnings: [[String: Any]] = []
-        let errorRegex = try? NSRegularExpression(pattern: "^(.*?):(\\d+):(\\d+): error: (.*)$")
-        let warningRegex = try? NSRegularExpression(pattern: "^(.*?):(\\d+):(\\d+): warning: (.*)$")
-        var sawTestFailure = false
-        var sawLinkerError = false
-        var sawResolveError = false
-        var sawNetworkError = false
+        // events/status handled via RunContext
 
-        func writeStatus(final: Bool = false, exitCode: Int32? = nil) {
-            guard let statusFile else { return }
-            var obj: [String: Any] = [
-                "title": title,
-                "command": command,
-                "phase": phase,
-                "status": reporter.currentStatus,
-                "elapsed": Int(Date().timeIntervalSince(start)),
-                "timestamp": ISO8601DateFormatter().string(from: Date())
-            ]
-            if final { obj["final"] = true; obj["exitCode"] = exitCode ?? 0; obj["errors"] = errors; obj["warnings"] = warnings }
-            writeJSONAtomic(path: statusFile, object: obj)
-            midi?.sendEvent(type: final ? "status-final" : "status", payload: obj)
-        }
-
-        func writeEvent(_ type: String, _ payload: [String: Any]) {
-            guard let eventFile else { return }
-            var obj = payload
-            obj["type"] = type
-            obj["ts"] = ISO8601DateFormatter().string(from: Date())
-            appendNDJSON(path: eventFile, object: obj)
-            midi?.sendEvent(type: type, payload: obj)
-        }
-
-        let handle: @Sendable (String) -> Void = { sLine in
-            // Basic phase detection for status
-            let s = sLine.trimmingCharacters(in: .whitespacesAndNewlines)
-            if s.isEmpty { return }
-            if s.contains("Fetching") { phase = "fetching"; reporter.set(status: "Fetching packages") }
-            else if s.contains("Updating") { phase = "updating"; reporter.set(status: "Updating dependencies") }
-            else if s.contains("Resolving") || s.contains("Resolve") { phase = "resolving"; reporter.set(status: "Resolving package graph") }
-            else if s.contains("Compiling") {
-                // SwiftPM verbose format: "Compiling <module> <file>.swift"
-                phase = "compiling"
-                if let mod = s.split(separator: " ").dropFirst().first { reporter.set(status: "Compiling \(mod)") }
-                else { reporter.set(status: "Compiling sources") }
-                reporter.bumpCompile()
-            }
-            else if s.contains("Linking") { phase = "linking"; reporter.set(status: "Linking targets") }
-            else if s.contains("Testing") || s.contains("Test Suite") { phase = "testing"; reporter.set(status: "Running tests") }
-            else if s.lowercased().contains("building for") { phase = "preparing"; reporter.set(status: "Preparing build") }
-            else if s.contains("Build complete!") { phase = "completed"; reporter.set(status: "Build complete") }
-            else if s.contains("Executing") { phase = "running"; reporter.set(status: "Launching app") }
-
-            if s.contains("error:") || s.contains("warning:") {
-                let lineRange = NSRange(location: 0, length: (s as NSString).length)
-                if let m = errorRegex?.firstMatch(in: s, options: [], range: lineRange) {
-                    let file = (s as NSString).substring(with: m.range(at: 1))
-                    let ln = Int((s as NSString).substring(with: m.range(at: 2))) ?? 0
-                    let col = Int((s as NSString).substring(with: m.range(at: 3))) ?? 0
-                    let msg = (s as NSString).substring(with: m.range(at: 4))
-                    let e: [String: Any] = ["file": file, "line": ln, "column": col, "message": msg]
-                    errors.append(e)
-                    writeEvent("error", ["error": e])
-                    reporter.set(status: "Error encountered")
-                    if ciMode {
-                        let file = e["file"] as? String ?? ""
-                        let ln = e["line"] as? Int ?? 0
-                        let col = e["column"] as? Int ?? 0
-                        let msg = (e["message"] as? String ?? "").replacingOccurrences(of: "\n", with: " ")
-                        print("::error file=\(file),line=\(ln),col=\(col)::\(msg)")
-                    }
-                    if msg.localizedCaseInsensitiveContains("linker command failed") || msg.localizedCaseInsensitiveContains("Undefined symbols") { sawLinkerError = true }
-                    if msg.localizedCaseInsensitiveContains("could not resolve") || msg.localizedCaseInsensitiveContains("resolve") { sawResolveError = true }
-                    if msg.localizedCaseInsensitiveContains("timed out") || msg.localizedCaseInsensitiveContains("network") || msg.localizedCaseInsensitiveContains("failed to connect") { sawNetworkError = true }
-                } else if let m = warningRegex?.firstMatch(in: s, options: [], range: lineRange) {
-                    let file = (s as NSString).substring(with: m.range(at: 1))
-                    let ln = Int((s as NSString).substring(with: m.range(at: 2))) ?? 0
-                    let col = Int((s as NSString).substring(with: m.range(at: 3))) ?? 0
-                    let msg = (s as NSString).substring(with: m.range(at: 4))
-                    let w: [String: Any] = ["file": file, "line": ln, "column": col, "message": msg]
-                    warnings.append(w)
-                    writeEvent("warning", ["warning": w])
-                    if ciMode {
-                        let file = w["file"] as? String ?? ""
-                        let ln = w["line"] as? Int ?? 0
-                        let col = w["column"] as? Int ?? 0
-                        let msg = (w["message"] as? String ?? "").replacingOccurrences(of: "\n", with: " ")
-                        print("::warning file=\(file),line=\(ln),col=\(col)::\(msg)")
-                    }
-                }
-            }
-            if s.contains("Test Suite 'All tests' failed") || s.contains("Failing tests:") { sawTestFailure = true }
-
-            // Emit log lines as events (without full echo if quiet)
-            writeEvent("log", ["line": s])
-            writeStatus()
-        }
+        let handle: @Sendable (String) -> Void = { sLine in ctx.process(line: sLine) }
 
         // Stream output
         let outHandle = stdoutPipe.fileHandleForReading
@@ -334,43 +246,140 @@ struct TutorCLI {
 
         do {
             reporter.start()
-            writeEvent("start", ["title": title, "command": command])
-            writeStatus()
+            ctx.onStart()
             try task.run()
             task.waitUntilExit()
         } catch {
             reporter.stop(final: false)
-            writeEvent("crash", ["message": "Failed to start process: \(error.localizedDescription)"])
-            writeStatus(final: true, exitCode: 1)
+            ctx.onCrash(message: "Failed to start process: \(error.localizedDescription)")
             return 1
         }
         reporter.stop(final: true, elapsed: Date().timeIntervalSince(start))
         let code = task.terminationStatus
-        writeEvent("end", ["exitCode": code])
-        writeStatus(final: true, exitCode: code)
+        ctx.onFinish(exitCode: code)
 
         if jsonSummary {
-            let elapsed = Date().timeIntervalSince(start)
-            let (category, hint) = categorizeFailure(command: command, phase: phase, code: code, sawTestFailure: sawTestFailure, sawLinkerError: sawLinkerError, sawResolveError: sawResolveError, sawNetworkError: sawNetworkError, errors: errors)
-            let summary: [String: Any] = [
-                "title": title,
-                "command": command,
-                "phase": phase,
-                "elapsed": Int(elapsed),
-                "exitCode": code,
-                "category": category,
-                "hint": hint,
-                "errorCount": errors.count,
-                "warningCount": warnings.count,
-                "errors": errors,
-                "warnings": warnings
-            ]
-            if let data = try? JSONSerialization.data(withJSONObject: summary, options: [.prettyPrinted]), let text = String(data: data, encoding: .utf8) {
-                print(text)
-            }
-            midi?.sendEvent(type: "summary", payload: summary)
+            if let text = ctx.makeSummaryJSON() { print(text) }
         }
         return code
+    }
+}
+
+final class RunContext: @unchecked Sendable {
+    private let q = DispatchQueue(label: "TutorCLI.RunContext")
+    private let title: String
+    private let command: String
+    private let statusPath: String?
+    private let eventPath: String?
+    private let reporter: ProgressReporter
+    private let midi: MIDIBridge?
+    private let ciMode: Bool
+    private let start: Date
+    private var phase: String = "starting"
+    private var errors: [[String: Any]] = []
+    private var warnings: [[String: Any]] = []
+    private let errorRegex = try? NSRegularExpression(pattern: "^(.*?):(\\d+):(\\d+): error: (.*)$")
+    private let warningRegex = try? NSRegularExpression(pattern: "^(.*?):(\\d+):(\\d+): warning: (.*)$")
+    private var sawTestFailure = false
+    private var sawLinkerError = false
+    private var sawResolveError = false
+    private var sawNetworkError = false
+
+    init(title: String, command: String, statusPath: String?, eventPath: String?, reporter: ProgressReporter, midi: MIDIBridge?, ciMode: Bool, start: Date) {
+        self.title = title; self.command = command; self.statusPath = statusPath; self.eventPath = eventPath; self.reporter = reporter; self.midi = midi; self.ciMode = ciMode; self.start = start
+    }
+
+    func onStart() { q.sync { writeEvent(type: "start", payload: ["title": title, "command": command]); writeStatus() } }
+    func onCrash(message: String) { q.sync { writeEvent(type: "crash", payload: ["message": message]); writeStatus(final: true, exitCode: 1) } }
+    func onFinish(exitCode: Int32) { q.sync { writeEvent(type: "end", payload: ["exitCode": exitCode]); writeStatus(final: true, exitCode: exitCode) } }
+
+    func process(line: String) {
+        let s = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        if s.isEmpty { return }
+        q.sync {
+            if s.contains("Fetching") { phase = "fetching"; reporter.set(status: "Fetching packages") }
+            else if s.contains("Updating") { phase = "updating"; reporter.set(status: "Updating dependencies") }
+            else if s.contains("Resolving") || s.contains("Resolve") { phase = "resolving"; reporter.set(status: "Resolving package graph") }
+            else if s.contains("Compiling") { phase = "compiling"; if let mod = s.split(separator: " ").dropFirst().first { reporter.set(status: "Compiling \(mod)") } else { reporter.set(status: "Compiling sources") }; reporter.bumpCompile() }
+            else if s.contains("Linking") { phase = "linking"; reporter.set(status: "Linking targets") }
+            else if s.contains("Testing") || s.contains("Test Suite") { phase = "testing"; reporter.set(status: "Running tests") }
+            else if s.lowercased().contains("building for") { phase = "preparing"; reporter.set(status: "Preparing build") }
+            else if s.contains("Build complete!") { phase = "completed"; reporter.set(status: "Build complete") }
+            else if s.contains("Executing") { phase = "running"; reporter.set(status: "Launching app") }
+
+            if s.contains("error:") || s.contains("warning:") {
+                let lineRange = NSRange(location: 0, length: (s as NSString).length)
+                if let m = errorRegex?.firstMatch(in: s, options: [], range: lineRange) {
+                    let file = (s as NSString).substring(with: m.range(at: 1))
+                    let ln = Int((s as NSString).substring(with: m.range(at: 2))) ?? 0
+                    let col = Int((s as NSString).substring(with: m.range(at: 3))) ?? 0
+                    let msg = (s as NSString).substring(with: m.range(at: 4))
+                    let e: [String: Any] = ["file": file, "line": ln, "column": col, "message": msg]
+                    errors.append(e)
+                    writeEvent(type: "error", payload: ["error": e])
+                    reporter.set(status: "Error encountered")
+                    if ciMode { print("::error file=\(file),line=\(ln),col=\(col)::\(msg.replacingOccurrences(of: "\n", with: " "))") }
+                    if msg.localizedCaseInsensitiveContains("linker command failed") || msg.localizedCaseInsensitiveContains("Undefined symbols") { sawLinkerError = true }
+                    if msg.localizedCaseInsensitiveContains("could not resolve") || msg.localizedCaseInsensitiveContains("resolve") { sawResolveError = true }
+                    if msg.localizedCaseInsensitiveContains("timed out") || msg.localizedCaseInsensitiveContains("network") || msg.localizedCaseInsensitiveContains("failed to connect") { sawNetworkError = true }
+                } else if let m = warningRegex?.firstMatch(in: s, options: [], range: lineRange) {
+                    let file = (s as NSString).substring(with: m.range(at: 1))
+                    let ln = Int((s as NSString).substring(with: m.range(at: 2))) ?? 0
+                    let col = Int((s as NSString).substring(with: m.range(at: 3))) ?? 0
+                    let msg = (s as NSString).substring(with: m.range(at: 4))
+                    let w: [String: Any] = ["file": file, "line": ln, "column": col, "message": msg]
+                    warnings.append(w)
+                    writeEvent(type: "warning", payload: ["warning": w])
+                    if ciMode { print("::warning file=\(file),line=\(ln),col=\(col)::\(msg.replacingOccurrences(of: "\n", with: " "))") }
+                }
+            }
+            if s.contains("Test Suite 'All tests' failed") || s.contains("Failing tests:") { sawTestFailure = true }
+            writeEvent(type: "log", payload: ["line": s])
+            writeStatus()
+        }
+    }
+
+    private func writeStatus(final: Bool = false, exitCode: Int32? = nil) {
+        guard let statusPath else { return }
+        var obj: [String: Any] = [
+            "title": title,
+            "command": command,
+            "phase": phase,
+            "status": reporter.currentStatus,
+            "elapsed": Int(Date().timeIntervalSince(start)),
+            "timestamp": ISO8601DateFormatter().string(from: Date())
+        ]
+        if final { obj["final"] = true; obj["exitCode"] = exitCode ?? 0; obj["errors"] = errors; obj["warnings"] = warnings }
+        _ = writeJSONAtomic(path: statusPath, object: obj)
+        midi?.sendEvent(type: final ? "status-final" : "status", payload: obj)
+    }
+
+    private func writeEvent(type: String, payload: [String: Any]) {
+        guard let eventPath else { return }
+        var obj = payload
+        obj["type"] = type
+        obj["ts"] = ISO8601DateFormatter().string(from: Date())
+        _ = appendNDJSON(path: eventPath, object: obj)
+        midi?.sendEvent(type: type, payload: obj)
+    }
+
+    func makeSummaryJSON() -> String? {
+        let (category, hint) = categorizeFailure(command: command, phase: phase, code: 0, sawTestFailure: sawTestFailure, sawLinkerError: sawLinkerError, sawResolveError: sawResolveError, sawNetworkError: sawNetworkError, errors: errors)
+        let summary: [String: Any] = [
+            "title": title,
+            "command": command,
+            "phase": phase,
+            "elapsed": Int(Date().timeIntervalSince(start)),
+            "exitCode": 0,
+            "category": category,
+            "hint": hint,
+            "errorCount": errors.count,
+            "warningCount": warnings.count,
+            "errors": errors,
+            "warnings": warnings
+        ]
+        if let data = try? JSONSerialization.data(withJSONObject: summary, options: [.prettyPrinted]), let text = String(data: data, encoding: .utf8) { return text }
+        return nil
     }
 }
 
@@ -705,7 +714,7 @@ extension TutorCLI {
     }
 }
 
-final class LocalHTTPServer {
+final class LocalHTTPServer: @unchecked Sendable {
     private let port: Int
     private let statusPath: String
     private let eventsPath: String
@@ -743,30 +752,18 @@ final class LocalHTTPServer {
         let p: NWEndpoint.Port = (port == 0 ? .any : NWEndpoint.Port(rawValue: UInt16(port))!)
         let l = try NWListener(using: params, on: p)
         listener = l
-        l.newConnectionHandler = { [weak self] conn in
-            self?.setupConnection(conn)
-        }
-        var actualPort: UInt16 = 0
-        l.stateUpdateHandler = { state in
-            switch state {
-            case .ready:
-                if let port = l.port?.rawValue { actualPort = port }
-            default:
-                break
-            }
-        }
+        l.newConnectionHandler = { [weak self] conn in self?.setupConnection(conn) }
         l.start(queue: .main)
-        // Wait briefly for ready
-        let group = DispatchGroup(); group.enter()
-        DispatchQueue.global().asyncAfter(deadline: .now() + 0.2) { group.leave() }
-        group.wait()
-        return Int(actualPort == 0 ? UInt16(self.port) : actualPort)
+        Thread.sleep(forTimeInterval: 0.2)
+        let p = l.port?.rawValue ?? UInt16(self.port)
+        return Int(p)
     }
 
     private func setupConnection(_ conn: NWConnection) {
         let id = ObjectIdentifier(conn)
         connections[id] = conn
-        conn.stateUpdateHandler = { state in
+        conn.stateUpdateHandler = { [weak self] state in
+            guard let self else { return }
             if case .failed = state { self.connections.removeValue(forKey: id) }
             if case .cancelled = state { self.connections.removeValue(forKey: id) }
         }
