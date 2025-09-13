@@ -741,7 +741,11 @@ extension TutorCLI {
         }
         // Poll for up to 3 seconds
         var tries = 30; var sseOK = false
-        while tries > 0 { if cap.saw { sseOK = true; break }; Thread.sleep(forTimeInterval: 0.1); tries -= 1 }
+        while tries > 0 {
+            if cap.saw { sseOK = true; break }
+            usleep(100_000) // 0.1s
+            tries -= 1
+        }
         print("/events (sse) -> \(sseOK ? "OK" : "NO EVENT")")
         ok = ok && sseOK
         if ok { print("Doctor: OK"); exit(0) } else { fputs("Doctor: some checks failed\n", stderr); exit(1) }
