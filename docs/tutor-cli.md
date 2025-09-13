@@ -86,6 +86,60 @@ Or install via the CLI itself (after building it once):
   - Run server: `tutor serve --dir <tutorial> --socket /tmp/tutor.sse --dev`
   - Run client: `python3 unix_sse_client.py /tmp/tutor.sse`
 
+- Swift (POSIX):
+  ```swift
+  // unix_sse_client.swift
+  import Foundation
+  import Darwin
+
+  let path = CommandLine.arguments.dropFirst().first ?? "/tmp/tutor.sse"
+
+  // Create AF_UNIX stream socket
+  let fd = socket(AF_UNIX, SOCK_STREAM, 0)
+  guard fd >= 0 else { perror("socket"); exit(1) }
+
+  var addr = sockaddr_un()
+  addr.sun_family = sa_family_t(AF_UNIX)
+  // Copy path into sun_path (ensure it fits)
+  let bytes = [UInt8](path.utf8)
+  if bytes.count >= MemoryLayout.size(ofValue: addr.sun_path) { fatalError("Path too long") }
+  withUnsafeMutablePointer(to: &addr.sun_path) { ptr in
+    let buf = UnsafeMutableRawPointer(ptr).assumingMemoryBound(to: UInt8.self)
+    for (i, b) in bytes.enumerated() { buf[i] = b }
+    buf[bytes.count] = 0
+  }
+  let len = socklen_t(MemoryLayout.size(ofValue: addr.sun_family) + bytes.count + 1)
+  var a = addr
+  let res = withUnsafePointer(to: &a) {
+    $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { connect(fd, $0, len) }
+  }
+  if res != 0 { perror("connect"); exit(2) }
+
+  var buffer = Data()
+  var tmp = [UInt8](repeating: 0, count: 4096)
+  while true {
+    let n = read(fd, &tmp, tmp.count)
+    if n <= 0 { break }
+    buffer.append(tmp, count: n)
+    while let range = buffer.range(of: Data("\n\n".utf8)) {
+      let chunk = buffer.subdata(in: 0..<range.lowerBound)
+      if let s = String(data: chunk, encoding: .utf8) {
+        print(s)
+      }
+      buffer.removeSubrange(0..<range.upperBound)
+    }
+  }
+  ```
+  - Build: `swiftc unix_sse_client.swift -o unix-sse`
+  - Run: `./unix-sse /tmp/tutor.sse`
+
+### HTTP SSE Client Example (Swift)
+
+- A minimal client for `/events` over HTTP is provided at `docs/examples/sse_http_client.swift`.
+- Build and run:
+  - `swiftc docs/examples/sse_http_client.swift -o sse-http`
+  - `./sse-http http://127.0.0.1:<port>/events`
+
 ## MIDI Output (Experimental)
 
 - macOS only: the CLI can expose a virtual MIDI source and send each event as a compact SysEx message (manufacturer ID 0x7D), compatible with FountainAI's `SSEOverMIDI`.

@@ -1,0 +1,45 @@
+name: Tutor CLI Example CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'tools/tutor-cli/**'
+      - 'docs/**'
+      - 'tutorials/**'
+
+jobs:
+  tutor:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Tutor CLI
+        run: |
+          cd tools/tutor-cli
+          swift build -c release
+          .build/release/tutor install
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Unit tests with coverage (CLI)
+        run: |
+          cd tools/tutor-cli
+          swift test --enable-code-coverage
+
+      - name: Build sample tutorial with CI annotations and summary
+        working-directory: tutorials/01-hello-fountainai
+        run: |
+          set +e
+          tutor build --ci --quiet --json-summary > summary.json || true
+          mkdir -p .tutor
+          cp summary.json .tutor/summary.json || true
+
+      - name: Upload artifacts (status/events/summary)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tutor-status
+          path: |
+            tutorials/01-hello-fountainai/.tutor/status.json
+            tutorials/01-hello-fountainai/.tutor/events.ndjson
+            tutorials/01-hello-fountainai/.tutor/summary.json
+
