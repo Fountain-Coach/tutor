@@ -721,9 +721,16 @@ extension TutorCLI {
         let dl = get("/docs-lite"); let dlStr = String(data: dl.body, encoding: .utf8) ?? ""
         print("/docs-lite -> \(dl.code)")
         ok = ok && (dl.code == 200 && dlStr.contains("Tutor Serve API (Lite)"))
-        // Docs (falls back to lite)
+        // Docs (offline Swagger UI)
         let d = get("/docs"); print("/docs -> \(d.code)")
         ok = ok && (d.code == 200)
+        // Assets
+        let css = get("/assets/swagger-ui.css"); print("/assets/swagger-ui.css -> \(css.code) (\(css.body.count) bytes)")
+        ok = ok && (css.code == 200 && css.body.count > 1000)
+        let js = get("/assets/swagger-ui-bundle.js"); print("/assets/swagger-ui-bundle.js -> \(js.code) (\(js.body.count) bytes)")
+        ok = ok && (js.code == 200 && js.body.count > 10000)
+        let rd = get("/assets/redoc.standalone.js"); print("/assets/redoc.standalone.js -> \(rd.code) (\(rd.body.count) bytes)")
+        ok = ok && (rd.code == 200 && rd.body.count > 10000)
         // SSE: subscribe and then write warning
         final class SSECap: NSObject, URLSessionDataDelegate, @unchecked Sendable { private(set) var saw = false
             func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
@@ -920,6 +927,12 @@ final class LocalHTTPServer: @unchecked Sendable {
         case ("GET", "/openapi.yaml"):
             if let data = loadOpenAPI(path: "tutor-serve.yaml") { respond(conn, status: 200, headers: ["Content-Type": "application/yaml"], body: data) }
             else { respond(conn, status: 500, headers: ["Content-Type": "text/plain"], body: Data("missing openapi".utf8)) }
+        case ("GET", "/assets/swagger-ui.css"):
+            if let data = loadOpenAPI(path: "assets/swagger-ui.css") { respond(conn, status: 200, headers: ["Content-Type": "text/css"], body: data) }
+            else { respond(conn, status: 404, headers: ["Content-Type": "text/plain"], body: Data("missing asset".utf8)) }
+        case ("GET", "/assets/swagger-ui-bundle.js"):
+            if let data = loadOpenAPI(path: "assets/swagger-ui-bundle.js") { respond(conn, status: 200, headers: ["Content-Type": "application/javascript"], body: data) }
+            else { respond(conn, status: 404, headers: ["Content-Type": "text/plain"], body: Data("missing asset".utf8)) }
         case ("GET", "/docs"), ("GET", "/docs/"):
             if let data = loadOpenAPI(path: "index.html") { respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: data) }
             else { respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: Data(docsLiteHTML().utf8)) }
@@ -942,8 +955,26 @@ final class LocalHTTPServer: @unchecked Sendable {
             """
             respond(conn, status: 200, headers: ["Content-Type": "text/html", "Cache-Control": "no-store"], body: Data(html.utf8))
         case ("GET", "/redoc"):
-            if let data = loadOpenAPI(path: "redoc.html") { respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: data) }
-            else { respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: Data(docsLiteHTML().utf8)) }
+            // Serve Redoc offline using vendored asset
+            let html = """
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset=\"utf-8\"/>
+                <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
+                <title>Tutor Serve API — Redoc</title>
+                <style> body { margin: 0; padding: 0 } </style>
+                <script src=\"/assets/redoc.standalone.js\"></script>
+              </head>
+              <body>
+                <redoc spec-url=\"/openapi.yaml\"></redoc>
+              </body>
+            </html>
+            """
+            respond(conn, status: 200, headers: ["Content-Type": "text/html"], body: Data(html.utf8))
+        case ("GET", "/assets/redoc.standalone.js"):
+            if let data = loadOpenAPI(path: "assets/redoc.standalone.js") { respond(conn, status: 200, headers: ["Content-Type": "application/javascript"], body: data) }
+            else { respond(conn, status: 404, headers: ["Content-Type": "text/plain"], body: Data("missing asset".utf8)) }
         case ("GET", "/summary"):
             let sum = makeSummary(statusPath: statusPath, eventsPath: eventsPath)
             if let data = try? JSONSerialization.data(withJSONObject: sum, options: [.prettyPrinted]) {
