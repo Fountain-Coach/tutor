@@ -429,9 +429,52 @@ final class ProgressReporter {
     }
 }
 
-// MARK: - MIDI Bridge (optional)
+// MARK: - MIDI Bridge (uses FountainAI SSEOverMIDI when available)
 
-#if canImport(CoreMIDI)
+#if canImport(SSEOverMIDI)
+import SSEOverMIDI
+import MIDI2Core
+import MIDI2Transports
+
+final class MIDIBridge {
+    private let session: RTPMidiSession
+    private let sender: DefaultSseSender
+    private let receiver: DefaultSseReceiver
+    private let reliability = Reliability()
+
+    init?(name: String) {
+        let sess = RTPMidiSession(localName: name)
+        let flex = FlexPacker()
+        let sysx = SysEx8Packer()
+        self.session = sess
+        self.sender = DefaultSseSender(rtp: sess, flex: flex, sysx: sysx, rel: reliability)
+        self.receiver = DefaultSseReceiver(rtp: sess, flex: flex, sysx: sysx, rel: reliability)
+        do {
+            try receiver.start() // opens the session; required for send path
+        } catch {
+            return nil
+        }
+    }
+
+    static func make(name: String) -> MIDIBridge? { MIDIBridge(name: name) }
+
+    func sendEvent(type: String, payload: [String: Any]) {
+        var obj = payload
+        obj["evt"] = type
+        guard let data = try? JSONSerialization.data(withJSONObject: obj, options: []),
+              let json = String(data: data, encoding: .utf8) else { return }
+        do {
+            let env = SseEnvelope(ev: type, seq: 0, data: json)
+            try sender.send(event: env)
+            sender.flush()
+        } catch {
+            // ignore send errors in bridge
+        }
+    }
+
+    deinit { sender.close() }
+}
+#elseif canImport(CoreMIDI)
 import CoreMIDI
 final class MIDIBridge {
     private var client = MIDIClientRef()
@@ -454,13 +497,11 @@ final class MIDIBridge {
         var bytes = [UInt8](repeating: 0, count: clipped.count + 3)
         bytes[0] = 0xF0 // SysEx start
         bytes[1] = 0x7D // Non-commercial manufacturer ID
-        // copy JSON (7-bit safe ASCII expected)
         for (i, b) in clipped.enumerated() { bytes[i+2] = b & 0x7F }
         bytes[bytes.count - 1] = 0xF7 // SysEx end
         send(bytes: bytes)
     }
     private func send(bytes: [UInt8]) {
-        // Build packet list
         let capacity = 512
         let plPointer = UnsafeMutablePointer<MIDIPacketList>.allocate(capacity: 1)
         defer { plPointer.deallocate() }
