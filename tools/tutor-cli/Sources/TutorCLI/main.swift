@@ -148,7 +148,8 @@ struct TutorCLI {
             jsonSummary: jsonSummary,
             ciMode: ciMode,
             midiEnabled: midiEnabled,
-            midiName: midiName
+            midiName: midiName,
+            extraEnv: nil
         )
         if code != 0 { exit(Int32(code)) }
     }
@@ -205,13 +206,17 @@ struct TutorCLI {
                            jsonSummary: Bool,
                            ciMode: Bool,
                            midiEnabled: Bool,
-                           midiName: String?) -> Int32 {
+                           midiName: String?,
+                           extraEnv: [String: String]? = nil) -> Int32 {
         let task = Process()
         task.executableURL = URL(fileURLWithPath: launchPath)
         task.arguments = args
         task.currentDirectoryURL = URL(fileURLWithPath: cwd)
         var env = ProcessInfo.processInfo.environment
         env["CLANG_MODULE_CACHE_PATH"] = env["CLANG_MODULE_CACHE_PATH"] ?? ((cwd as NSString).appendingPathComponent(".modulecache"))
+        if let extraEnv {
+            for (k,v) in extraEnv { env[k] = v }
+        }
         task.environment = env
 
         let stdoutPipe = Pipe()
@@ -840,7 +845,8 @@ extension TutorCLI {
                               jsonSummary: false,
                               ciMode: false,
                               midiEnabled: false,
-                              midiName: nil)
+                              midiName: nil,
+                              extraEnv: ["TUTOR_DIR": dir])
         if code != 0 { exit(code) }
     }
 }
