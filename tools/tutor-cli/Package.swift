@@ -8,8 +8,7 @@ let package = Package(
         .executable(name: "tutor", targets: ["TutorCLI"])
     ],
     dependencies: [
-        // Prefer local checkout if present to avoid network in tests
-        .package(path: "../_deps/the-fountainai")
+        .package(url: "https://github.com/Fountain-Coach/the-fountainai.git", branch: "main")
     ],
     targets: [
         .executableTarget(
