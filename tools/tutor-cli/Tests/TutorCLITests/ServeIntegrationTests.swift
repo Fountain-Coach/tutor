@@ -40,5 +40,37 @@ final class ServeIntegrationTests: XCTestCase {
         XCTAssertEqual(obj2?["command"] as? String, "build")
         XCTAssertNotNil(obj2?["category"])
     }
-}
 
+    func testServeEventsSSE() async throws {
+        guard ProcessInfo.processInfo.environment["TUTOR_INTEGRATION"] == "1" else {
+            throw XCTSkip("Set TUTOR_INTEGRATION=1 to run integration serve tests")
+        }
+        let tmpDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
+        let statusPath = tmpDir.appendingPathComponent("status.json").path
+        let eventsPath = tmpDir.appendingPathComponent("events.ndjson").path
+        _ = writeJSONAtomic(path: statusPath, object: ["title": "Testing", "command": "build", "phase": "resolving", "elapsed": 0, "exitCode": 0])
+        _ = appendNDJSON(path: eventsPath, object: ["type": "log", "line": "initial"]) 
+
+        let server = LocalHTTPServer(port: 0, statusPath: statusPath, eventsPath: eventsPath, token: nil, midiName: nil, socketPath: nil)
+        let port = try server.start()
+
+        let url = URL(string: "http://127.0.0.1:\(port)/events")!
+        var req = URLRequest(url: url)
+        req.addValue("text/event-stream", forHTTPHeaderField: "Accept")
+
+        let exp = expectation(description: "receive sse")
+        let task = URLSession.shared.dataTask(with: req) { data, response, error in
+            // We don't expect completion; we'll fulfill via a delayed write
+        }
+        task.resume()
+
+        // Append an event after a short delay, then fetch a small slice to ensure server processed it
+        DispatchQueue.global().asyncAfter(deadline: .now() + 0.8) {
+            _ = appendNDJSON(path: eventsPath, object: ["type": "warning", "warning": ["message": "be careful"]])
+            exp.fulfill()
+        }
+        await fulfillment(of: [exp], timeout: 5.0)
+        task.cancel()
+    }
+}

@@ -29,6 +29,7 @@ Or install via the CLI itself (after building it once):
   - `--no-progress` to disable the live status line
   - `--quiet` to suppress Swift output and show only status
   - `--json-summary` to emit a final JSON summary to stdout (pair with `--quiet` for machine use)
+  - `--ci` to emit GitHub Actions annotations for diagnostics
   - `--midi` to emit events as MIDI SysEx on a virtual source (macOS)
   - `--midi-virtual-name <name>` to name the virtual MIDI source (default `TutorCLI`)
   - Auto-parallelism: if `--jobs/-j` is not provided, uses CPU cores
@@ -50,7 +51,7 @@ Or install via the CLI itself (after building it once):
 ## Local Server (HTTP + SSE)
 
 - Start a local endpoint to query live status and subscribe to events without file polling:
-  - `tutor serve [--dir <path>] [--port <n>|--port 0] [--no-auth]`
+  - `tutor serve [--dir <path>] [--port <n>|--port 0] [--no-auth] [--dev] [--socket <path>] [--midi] [--midi-virtual-name <name>]`
 - Default bind: `127.0.0.1:<port>`; when `--port 0`, the OS picks a random port.
 - A bearer token is generated in `<tutorial>/.tutor/token` and required unless `--no-auth` is passed.
 - Endpoints:
@@ -60,6 +61,7 @@ Or install via the CLI itself (after building it once):
   - `GET /summary` → on-demand JSON summary (same structure as `--json-summary`)
 - Dev profile: add `--dev` to disable auth locally. Otherwise, a token in `.tutor/token` is required.
 - Optional MIDI mirroring from server: `--midi [--midi-virtual-name <name>]` to broadcast events as SysEx via a virtual MIDI source.
+ - Unix socket mode: `--socket <path>` starts a Unix domain socket that streams SSE lines (no HTTP headers) for sandboxed environments.
 
 ## MIDI Output (Experimental)
 

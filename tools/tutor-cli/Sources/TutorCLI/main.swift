@@ -46,11 +46,11 @@ struct TutorCLI {
 
         Commands:
           scaffold   --repo <path> --app <Name> [--bundle-id <id>]
-          build      [--dir <path>] [--verbose] [--no-progress] [--quiet] [--json-summary] [--midi] [--midi-virtual-name <name>] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift build args>]
-          run        [--dir <path>] [--verbose] [--no-progress] [--quiet] [--json-summary] [--midi] [--midi-virtual-name <name>] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift run args>]
-          test       [--dir <path>] [--verbose] [--no-progress] [--quiet] [--json-summary] [--midi] [--midi-virtual-name <name>] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift test args>]
+          build      [--dir <path>] [--verbose] [--no-progress] [--quiet] [--json-summary] [--ci] [--midi] [--midi-virtual-name <name>] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift build args>]
+          run        [--dir <path>] [--verbose] [--no-progress] [--quiet] [--json-summary] [--ci] [--midi] [--midi-virtual-name <name>] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift run args>]
+          test       [--dir <path>] [--verbose] [--no-progress] [--quiet] [--json-summary] [--ci] [--midi] [--midi-virtual-name <name>] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift test args>]
           status     [--dir <path>] [--json] [--watch]
-          serve      [--dir <path>] [--port <n>|--port 0] [--no-auth] [--dev] [--midi] [--midi-virtual-name <name>]
+          serve      [--dir <path>] [--port <n>|--port 0] [--no-auth] [--dev] [--socket <path>] [--midi] [--midi-virtual-name <name>]
 
         Examples:
           tutor build --dir tutorials/01-hello-fountainai
@@ -86,6 +86,7 @@ struct TutorCLI {
         var jsonSummary = false
         var midiEnabled = false
         var midiName: String? = nil
+        var ciMode = false
         if let idx = args.firstIndex(of: "--verbose") { verbose = true; args.remove(at: idx) }
         if let idx = args.firstIndex(of: "-v") { verbose = true; args.remove(at: idx) }
         if let idx = args.firstIndex(of: "--no-progress") { showProgress = false; args.remove(at: idx) }
@@ -94,6 +95,7 @@ struct TutorCLI {
         if let idx = args.firstIndex(of: "--status-file"), idx + 1 < args.count { statusFileOverride = args[idx+1]; args.removeSubrange(idx...(idx+1)) }
         if let idx = args.firstIndex(of: "--event-file"), idx + 1 < args.count { eventFileOverride = args[idx+1]; args.removeSubrange(idx...(idx+1)) }
         if let idx = args.firstIndex(of: "--json-summary") { jsonSummary = true; args.remove(at: idx) }
+        if let idx = args.firstIndex(of: "--ci") { ciMode = true; args.remove(at: idx) }
         if let idx = args.firstIndex(of: "--midi") { midiEnabled = true; args.remove(at: idx) }
         if let idx = args.firstIndex(of: "--midi-virtual-name"), idx + 1 < args.count { midiName = args[idx+1]; args.removeSubrange(idx...(idx+1)) }
 
@@ -138,6 +140,7 @@ struct TutorCLI {
             eventFile: eventPath,
             command: cmd,
             jsonSummary: jsonSummary,
+            ciMode: ciMode,
             midiEnabled: midiEnabled,
             midiName: midiName
         )
@@ -194,6 +197,7 @@ struct TutorCLI {
                            eventFile: String?,
                            command: String,
                            jsonSummary: Bool,
+                           ciMode: Bool,
                            midiEnabled: Bool,
                            midiName: String?) -> Int32 {
         let task = Process()
@@ -259,6 +263,7 @@ struct TutorCLI {
                 phase = "compiling"
                 if let mod = s.split(separator: " ").dropFirst().first { reporter.set(status: "Compiling \(mod)") }
                 else { reporter.set(status: "Compiling sources") }
+                reporter.bumpCompile()
             }
             else if s.contains("Linking") { phase = "linking"; reporter.set(status: "Linking targets") }
             else if s.contains("Testing") || s.contains("Test Suite") { phase = "testing"; reporter.set(status: "Running tests") }
@@ -277,6 +282,13 @@ struct TutorCLI {
                     errors.append(e)
                     writeEvent("error", ["error": e])
                     reporter.set(status: "Error encountered")
+                    if ciMode {
+                        let file = e["file"] as? String ?? ""
+                        let ln = e["line"] as? Int ?? 0
+                        let col = e["column"] as? Int ?? 0
+                        let msg = (e["message"] as? String ?? "").replacingOccurrences(of: "\n", with: " ")
+                        print("::error file=\(file),line=\(ln),col=\(col)::\(msg)")
+                    }
                     if msg.localizedCaseInsensitiveContains("linker command failed") || msg.localizedCaseInsensitiveContains("Undefined symbols") { sawLinkerError = true }
                     if msg.localizedCaseInsensitiveContains("could not resolve") || msg.localizedCaseInsensitiveContains("resolve") { sawResolveError = true }
                     if msg.localizedCaseInsensitiveContains("timed out") || msg.localizedCaseInsensitiveContains("network") || msg.localizedCaseInsensitiveContains("failed to connect") { sawNetworkError = true }
@@ -288,6 +300,13 @@ struct TutorCLI {
                     let w: [String: Any] = ["file": file, "line": ln, "column": col, "message": msg]
                     warnings.append(w)
                     writeEvent("warning", ["warning": w])
+                    if ciMode {
+                        let file = w["file"] as? String ?? ""
+                        let ln = w["line"] as? Int ?? 0
+                        let col = w["column"] as? Int ?? 0
+                        let msg = (w["message"] as? String ?? "").replacingOccurrences(of: "\n", with: " ")
+                        print("::warning file=\(file),line=\(ln),col=\(col)::\(msg)")
+                    }
                 }
             }
             if s.contains("Test Suite 'All tests' failed") || s.contains("Failing tests:") { sawTestFailure = true }
@@ -376,6 +395,8 @@ final class ProgressReporter {
     private let spinnerFrames = ["⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧","⠇","⠏"]
     private let isTTY: Bool
     private(set) var currentStatus: String = "Starting"
+    private var compileTicks: Int = 0
+    private var percent: Int = 0
 
     init(enabled: Bool, title: String) {
         self.enabled = enabled
@@ -404,16 +425,28 @@ final class ProgressReporter {
         currentStatus = status
     }
 
+    func bumpCompile() {
+        compileTicks += 1
+        // Heuristic: each compile tick advances ~0.5% up to 90%
+        let base = min(90, 10 + (compileTicks / 2))
+        percent = max(percent, base)
+    }
+
     private func tick() {
         let elapsed = Int(Date().timeIntervalSince(start))
         let frame = spinnerFrames[spinnerIndex % spinnerFrames.count]
         spinnerIndex += 1
+        // Phase-based baseline percent when no compile ticks
+        if currentStatus.hasPrefix("Resolving") { percent = max(percent, 10) }
+        else if currentStatus.hasPrefix("Fetching") || currentStatus.hasPrefix("Updating") { percent = max(percent, 15) }
+        else if currentStatus.hasPrefix("Linking") { percent = max(percent, 95) }
+        else if currentStatus.hasPrefix("Running") { percent = max(percent, 98) }
         if isTTY {
-            fputs("\r\u{001B}[2K\(frame) \(title): \(lastStatus) (\(elapsed)s)", stderr)
+            fputs("\r\u{001B}[2K\(frame) \(title): \(lastStatus) \(percent)% (\(elapsed)s)", stderr)
             fflush(stderr)
         } else {
             // Non-TTY: emit a line every 3 seconds
-            if spinnerIndex % 15 == 0 { fputs("… \(title.lowercased()) — \(lastStatus) (\(elapsed)s)\n", stderr) }
+            if spinnerIndex % 15 == 0 { fputs("… \(title.lowercased()) — \(lastStatus) \(percent)% (\(elapsed)s)\n", stderr) }
         }
     }
 
@@ -629,9 +662,11 @@ extension TutorCLI {
         var dev = false
         var midiEnabled = false
         var midiName: String? = nil
+        var socketPath: String? = nil
         if let idx = args.firstIndex(of: "--port"), idx + 1 < args.count, let p = Int(args[idx+1]) { port = p; args.removeSubrange(idx...(idx+1)) }
         if let idx = args.firstIndex(of: "--no-auth") { noAuth = true; args.remove(at: idx) }
         if let idx = args.firstIndex(of: "--dev") { dev = true; args.remove(at: idx) }
+        if let idx = args.firstIndex(of: "--socket"), idx + 1 < args.count { socketPath = args[idx+1]; args.removeSubrange(idx...(idx+1)) }
         if let idx = args.firstIndex(of: "--midi") { midiEnabled = true; args.remove(at: idx) }
         if let idx = args.firstIndex(of: "--midi-virtual-name"), idx + 1 < args.count { midiName = args[idx+1]; args.removeSubrange(idx...(idx+1)) }
         let (dir, _) = parseDir(args: &args)
@@ -651,11 +686,14 @@ extension TutorCLI {
             }
         }
 
-        let server = LocalHTTPServer(port: port, statusPath: statusPath, eventsPath: eventsPath, token: token, midiName: midiEnabled ? (midiName ?? "TutorCLI") : nil)
+        let server = LocalHTTPServer(port: port, statusPath: statusPath, eventsPath: eventsPath, token: token, midiName: midiEnabled ? (midiName ?? "TutorCLI") : nil, socketPath: socketPath)
         do {
             let actualPort = try server.start()
-            if let token { print("Serving on http://127.0.0.1:\(actualPort)  token=\(token)") }
-            else { print("Serving on http://127.0.0.1:\(actualPort) (auth disabled)") }
+            if let sp = socketPath { print("Serving SSE on unix://\(sp)") }
+            if actualPort > 0 {
+                if let token { print("Serving on http://127.0.0.1:\(actualPort)  token=\(token)") }
+                else { print("Serving on http://127.0.0.1:\(actualPort) (auth disabled)") }
+            }
             dispatchMain()
         } catch {
             fputs("Failed to start server: \(error)\n", stderr)
@@ -670,20 +708,25 @@ final class LocalHTTPServer {
     private let eventsPath: String
     private let token: String?
     private let midi: MIDIBridge?
-    init(port: Int, statusPath: String, eventsPath: String, token: String?, midiName: String?) {
+    private let socketPath: String?
+    init(port: Int, statusPath: String, eventsPath: String, token: String?, midiName: String?, socketPath: String?) {
         self.port = port
         self.statusPath = statusPath
         self.eventsPath = eventsPath
         self.token = token
         if let name = midiName { self.midi = MIDIBridge.make(name: name) } else { self.midi = nil }
+        self.socketPath = socketPath
     }
     enum ServeError: Error { case failedToBind }
     func start() throws -> Int {
-        #if canImport(Network)
-        return try startNW()
-        #else
+#if canImport(Network)
+        let p = try startNW()
+        if let sp = socketPath { try startUnix(at: sp) }
+        return p
+#else
+        if let sp = socketPath { try startUnix(at: sp); return 0 }
         return try startPOSIX()
-        #endif
+#endif
     }
 
     // Fallback very tiny POSIX server not implemented for brevity in non-Apple platforms
@@ -867,6 +910,77 @@ final class LocalHTTPServer {
 
     private func close(_ conn: NWConnection) { conn.cancel() }
     #endif
+
+    // MARK: Unix domain socket SSE
+    private func startUnix(at path: String) throws {
+        // Basic AF_UNIX stream socket broadcasting SSE lines (no HTTP headers)
+        let fd = socket(AF_UNIX, SOCK_STREAM, 0)
+        guard fd >= 0 else { throw ServeError.failedToBind }
+        var addr = sockaddr_un()
+        addr.sun_family = sa_family_t(AF_UNIX)
+        let maxPath = MemoryLayout.size(ofValue: addr.sun_path)
+        unlink(path)
+        let bytes = Array(path.utf8)
+        guard bytes.count < maxPath else { throw ServeError.failedToBind }
+        withUnsafeMutablePointer(to: &addr.sun_path) { ptr in
+            let buf = UnsafeMutableRawPointer(ptr).assumingMemoryBound(to: UInt8.self)
+            for (i, b) in bytes.enumerated() { buf[i] = b }
+            buf[bytes.count] = 0
+        }
+        let len = socklen_t(MemoryLayout.size(ofValue: addr.sun_family) + bytes.count + 1)
+        let bindRes = withUnsafePointer(to: &addr) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, len) }
+        }
+        guard bindRes == 0, listen(fd, 8) == 0 else { close(fd); throw ServeError.failedToBind }
+        let q = DispatchQueue.global()
+        q.async {
+            while true {
+                var clientAddr = sockaddr()
+                var clen: socklen_t = socklen_t(MemoryLayout<sockaddr>.size)
+                let cfd = withUnsafeMutablePointer(to: &clientAddr) {
+                    $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { accept(fd, $0, &clen) }
+                }
+                if cfd < 0 { continue }
+                self.streamEventsPOSIX(fd: cfd)
+            }
+        }
+    }
+
+    private func streamEventsPOSIX(fd: Int32) {
+        // Write initial status if available
+        if let data = FileManager.default.contents(atPath: statusPath), let text = String(data: data, encoding: .utf8) {
+            _ = text.withCString { cstr in write(fd, cstr, strlen(cstr)) }
+            _ = write(fd, "\n\n", 2)
+        }
+        let url = URL(fileURLWithPath: eventsPath)
+        var lastSize: UInt64 = 0
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: eventsPath), let n = attrs[.size] as? NSNumber { lastSize = n.uint64Value }
+        let timer = DispatchSource.makeTimerSource(queue: .global())
+        timer.schedule(deadline: .now(), repeating: .milliseconds(500))
+        timer.setEventHandler { [weak self] in
+            guard let self else { return }
+            guard let attrs = try? FileManager.default.attributesOfItem(atPath: self.eventsPath), let n = attrs[.size] as? NSNumber else { return }
+            let size = n.uint64Value
+            if size > lastSize {
+                if let h = try? FileHandle(forReadingFrom: url) {
+                    defer { try? h.close() }
+                    try? h.seek(toOffset: lastSize)
+                    if let data = try? h.readToEnd(), let text = String(data: data, encoding: .utf8) {
+                        for line in text.split(separator: "\n", omittingEmptySubsequences: false) {
+                            if line.isEmpty { continue }
+                            let s = String(line) + "\n\n"
+                            _ = s.withCString { cstr in write(fd, cstr, strlen(cstr)) }
+                            if let obj = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any], let t = obj["type"] as? String {
+                                self.midi?.sendEvent(type: t, payload: obj)
+                            }
+                        }
+                    }
+                }
+                lastSize = size
+            }
+        }
+        timer.resume()
+    }
 }
 
 // Build a summary from status + events files (mirrors --json-summary output)
