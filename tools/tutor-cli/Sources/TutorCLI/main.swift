@@ -704,7 +704,8 @@ extension TutorCLI {
             if actualPort > 0 {
                 if let token { print("Serving on http://127.0.0.1:\(actualPort)  token=\(token)") }
                 else { print("Serving on http://127.0.0.1:\(actualPort) (auth disabled)") }
-                print("Docs:   http://127.0.0.1:\(actualPort)/docs")
+                print("Docs:   http://127.0.0.1:\(actualPort)/docs (full UI; needs CDN)")
+                print("Lite:   http://127.0.0.1:\(actualPort)/docs-lite (no external deps)")
                 print("Redoc:  http://127.0.0.1:\(actualPort)/redoc")
                 print("Spec:   http://127.0.0.1:\(actualPort)/openapi.yaml")
             }
@@ -812,8 +813,8 @@ final class LocalHTTPServer: @unchecked Sendable {
 
         switch (method, urlPath) {
         case ("GET", "/"):
-            // Redirect root to /docs for convenience
-            let head = "HTTP/1.1 302 Found\r\nLocation: /docs\r\nConnection: close\r\n\r\n"
+            // Redirect root to /docs-lite for offline-friendly default
+            let head = "HTTP/1.1 302 Found\r\nLocation: /docs-lite\r\nConnection: close\r\n\r\n"
             conn.send(content: Data(head.utf8), completion: .contentProcessed { [weak self] _ in self?.close(conn) })
             return
         case ("GET", "/health"):
