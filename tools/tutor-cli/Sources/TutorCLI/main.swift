@@ -709,8 +709,8 @@ extension TutorCLI {
                 print("Redoc:  http://127.0.0.1:\(actualPort)/redoc")
                 print("Spec:   http://127.0.0.1:\(actualPort)/openapi.yaml")
             }
-            // Keep the main runloop alive for the server
-            RunLoop.main.run()
+            // Keep process alive indefinitely (simple, robust)
+            while true { Thread.sleep(forTimeInterval: 60) }
         } catch {
             fputs("Failed to start server: \(error)\n", stderr)
             exit(1)
