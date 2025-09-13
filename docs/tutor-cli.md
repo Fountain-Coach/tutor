@@ -60,8 +60,31 @@ Or install via the CLI itself (after building it once):
   - `GET /events` → Server-Sent Events (SSE) stream; emits `event: <type>` with `data: {…}` per NDJSON entry.
   - `GET /summary` → on-demand JSON summary (same structure as `--json-summary`)
 - Dev profile: add `--dev` to disable auth locally. Otherwise, a token in `.tutor/token` is required.
-- Optional MIDI mirroring from server: `--midi [--midi-virtual-name <name>]` to broadcast events as SysEx via a virtual MIDI source.
+ - Optional MIDI mirroring from server: `--midi [--midi-virtual-name <name>]` to broadcast events as SysEx via a virtual MIDI source.
  - Unix socket mode: `--socket <path>` starts a Unix domain socket that streams SSE lines (no HTTP headers) for sandboxed environments.
+
+### Unix Socket Client Examples
+
+- socat (quickest):
+  - `socat - UNIX-CONNECT:/tmp/tutor.sse`
+- Python 3 (portable):
+  ```python
+  # unix_sse_client.py
+  import socket, sys
+  path = sys.argv[1] if len(sys.argv) > 1 else "/tmp/tutor.sse"
+  s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+  s.connect(path)
+  buf = b""
+  while True:
+      data = s.recv(4096)
+      if not data: break
+      buf += data
+      while b"\n\n" in buf:
+          chunk, buf = buf.split(b"\n\n", 1)
+          print(chunk.decode(errors="ignore"))
+  ```
+  - Run server: `tutor serve --dir <tutorial> --socket /tmp/tutor.sse --dev`
+  - Run client: `python3 unix_sse_client.py /tmp/tutor.sse`
 
 ## MIDI Output (Experimental)
 
@@ -104,3 +127,43 @@ Or install via the CLI itself (after building it once):
 - The CLI is preferred. Profiles in `setup.sh` still control which FountainAI products your app depends on.
 - See also: `docs/dependency-management-deep-dive.md` for profiles and SwiftPM behavior.
 - Roadmap: `docs/tutor-cli-roadmap.md` tracks ongoing improvements.
+
+## CI Usage (GitHub Actions)
+
+- Example job that annotates logs and publishes a summary artifact:
+
+```yaml
+name: Tutor CI (example)
+on: [push, pull_request]
+jobs:
+  tutor:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Tutor CLI
+        run: |
+          cd tools/tutor-cli
+          swift build -c release
+          .build/release/tutor install
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Build tutorial with CI annotations
+        working-directory: tutorials/01-hello-fountainai
+        run: |
+          set +e
+          tutor build --ci --quiet --json-summary > summary.json || true
+          mkdir -p .tutor
+          cp summary.json .tutor/summary.json || true
+      - name: Upload artifacts (status/events/summary)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tutor-status
+          path: |
+            tutorials/01-hello-fountainai/.tutor/status.json
+            tutorials/01-hello-fountainai/.tutor/events.ndjson
+            tutorials/01-hello-fountainai/.tutor/summary.json
+```
+
+- Tips:
+  - Use `--ci` to emit `::error` and `::warning` annotations for parsed diagnostics.
+  - Pair with `--quiet` and `--json-summary` to keep logs succinct and capture structured results.
+  - Upload `.tutor/` artifacts for PR triage and debugging.
