@@ -1,6 +1,7 @@
 import XCTest
 @testable import TutorCLI
 import Foundation
+import Darwin
 
 final class UnixSocketTests: XCTestCase {
     func testUnixSocketStreamsStatus() throws {
@@ -45,4 +46,3 @@ final class UnixSocketTests: XCTestCase {
         _ = Darwin.close(fd)
     }
 }
-
