@@ -694,15 +694,17 @@ extension TutorCLI {
         func get(_ path: String, accept: String? = nil, timeout: TimeInterval = 3.0) -> (code: Int, body: Data) {
             let url = URL(string: "http://127.0.0.1:\(port)\(path)")!
             var req = URLRequest(url: url); if let a = accept { req.addValue(a, forHTTPHeaderField: "Accept") }
-            let sem = DispatchSemaphore(value: 1); sem.wait()
-            var code = -1; var body = Data()
+            final class Box { var code: Int = -1; var body: Data = Data() }
+            let box = Box()
+            let sem = DispatchSemaphore(value: 0)
             let task = URLSession.shared.dataTask(with: req) { data, resp, _ in
-                code = (resp as? HTTPURLResponse)?.statusCode ?? -1
-                body = data ?? Data(); sem.signal()
+                box.code = (resp as? HTTPURLResponse)?.statusCode ?? -1
+                box.body = data ?? Data()
+                sem.signal()
             }
             task.resume()
             _ = sem.wait(timeout: .now() + timeout)
-            return (code, body)
+            return (box.code, box.body)
         }
         var ok = true
         // Health
@@ -723,13 +725,13 @@ extension TutorCLI {
         let d = get("/docs"); print("/docs -> \(d.code)")
         ok = ok && (d.code == 200)
         // SSE: subscribe and then write warning
-        final class SSECap: NSObject, URLSessionDataDelegate { let exp: DispatchSemaphore; var saw = false; init(_ exp: DispatchSemaphore){ self.exp = exp }
+        final class SSECap: NSObject, URLSessionDataDelegate, @unchecked Sendable { let exp: DispatchSemaphore; private(set) var saw = false; init(_ exp: DispatchSemaphore){ self.exp = exp }
             func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
                 if let s = String(data: data, encoding: .utf8), s.contains("event: warning") { saw = true; exp.signal() }
             } }
         let sem = DispatchSemaphore(value: 0)
         let cap = SSECap(sem)
-        let session = URLSession(configuration: .default, delegate: cap, delegateQueue: nil)
+        let session = URLSession(configuration: .default, delegate: cap, delegateQueue: .main)
         var req = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/events")!)
         req.addValue("text/event-stream", forHTTPHeaderField: "Accept")
         let task = session.dataTask(with: req)
