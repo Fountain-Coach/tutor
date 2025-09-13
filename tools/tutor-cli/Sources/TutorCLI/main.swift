@@ -51,7 +51,7 @@ struct TutorCLI {
           run        [--dir <path>] [--verbose] [--no-progress] [--quiet] [--json-summary] [--ci] [--midi] [--midi-virtual-name <name>] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift run args>]
           test       [--dir <path>] [--verbose] [--no-progress] [--quiet] [--json-summary] [--ci] [--midi] [--midi-virtual-name <name>] [--no-status-file] [--status-file <path>] [--event-file <path>] [-- <swift test args>]
           status     [--dir <path>] [--json] [--watch]
-          serve      [--dir <path>] [--port <n>|--port 0] [--no-auth] [--dev] [--socket <path>] [--midi] [--midi-virtual-name <name>]
+          serve      [--dir <path>] [--port <n>|--port 0] [--no-auth] [--dev] [--socket <path>] [--open] [--midi] [--midi-virtual-name <name>]
           doctor     [--dir <path>]  (runs local server health checks)
 
         Examples:
@@ -757,12 +757,14 @@ extension TutorCLI {
         var midiEnabled = false
         var midiName: String? = nil
         var socketPath: String? = nil
+        var openDocs = false
         if let idx = args.firstIndex(of: "--port"), idx + 1 < args.count, let p = Int(args[idx+1]) { port = p; args.removeSubrange(idx...(idx+1)) }
         if let idx = args.firstIndex(of: "--no-auth") { noAuth = true; args.remove(at: idx) }
         if let idx = args.firstIndex(of: "--dev") { dev = true; args.remove(at: idx) }
         if let idx = args.firstIndex(of: "--socket"), idx + 1 < args.count { socketPath = args[idx+1]; args.removeSubrange(idx...(idx+1)) }
         if let idx = args.firstIndex(of: "--midi") { midiEnabled = true; args.remove(at: idx) }
         if let idx = args.firstIndex(of: "--midi-virtual-name"), idx + 1 < args.count { midiName = args[idx+1]; args.removeSubrange(idx...(idx+1)) }
+        if let idx = args.firstIndex(of: "--open") { openDocs = true; args.remove(at: idx) }
         let (dir, _) = parseDir(args: &args)
 
         let tutorDir = (dir as NSString).appendingPathComponent(".tutor")
@@ -791,6 +793,13 @@ extension TutorCLI {
                 print("Lite:   http://127.0.0.1:\(actualPort)/docs-lite (no external deps)")
                 print("Redoc:  http://127.0.0.1:\(actualPort)/redoc")
                 print("Spec:   http://127.0.0.1:\(actualPort)/openapi.yaml")
+                if openDocs {
+                    // Try to open the offline-friendly page in default browser
+                    let proc = Process()
+                    proc.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+                    proc.arguments = ["http://127.0.0.1:\(actualPort)/docs-lite"]
+                    try? proc.run()
+                }
             }
             // Keep process alive indefinitely (simple, robust)
             while true { Thread.sleep(forTimeInterval: 60) }
