@@ -1,4 +1,8 @@
 import Foundation
+import Dispatch
+#if canImport(Darwin)
+import Darwin
+#endif
 
 struct CLI {
     enum Command: String { case scaffold, build, run, test, install, help }
@@ -35,9 +39,9 @@ struct TutorCLI {
 
         Commands:
           scaffold   --repo <path> --app <Name> [--bundle-id <id>]
-          build      [--dir <path>] [-- <swift build args>]
-          run        [--dir <path>] [-- <swift run args>]
-          test       [--dir <path>] [-- <swift test args>]
+          build      [--dir <path>] [--verbose] [--no-progress] [-- <swift build args>]
+          run        [--dir <path>] [--verbose] [--no-progress] [-- <swift run args>]
+          test       [--dir <path>] [--verbose] [--no-progress] [-- <swift test args>]
 
         Examples:
           tutor build --dir tutorials/01-hello-fountainai
@@ -63,6 +67,15 @@ struct TutorCLI {
     }
 
     static func runSwift(cmd: String, args: inout [String]) {
+        // Local CLI flags
+        var verbose = false
+        var showProgress = true
+        var quiet = false
+        if let idx = args.firstIndex(of: "--verbose") { verbose = true; args.remove(at: idx) }
+        if let idx = args.firstIndex(of: "-v") { verbose = true; args.remove(at: idx) }
+        if let idx = args.firstIndex(of: "--no-progress") { showProgress = false; args.remove(at: idx) }
+        if let idx = args.firstIndex(of: "--quiet") { quiet = true; args.remove(at: idx) }
+
         let (dir, pass) = parseDir(args: &args)
         let moduleCache = (dir as NSString).appendingPathComponent(".modulecache")
         let swiftModuleCache = (dir as NSString).appendingPathComponent(".swift-module-cache")
@@ -72,8 +85,22 @@ struct TutorCLI {
         var procArgs = [cmd, "--disable-sandbox",
                         "-Xcc", "-fmodules-cache-path=\(moduleCache)",
                         "-Xswiftc", "-module-cache-path", "-Xswiftc", swiftModuleCache]
-        procArgs.append(contentsOf: pass)
-        let code = runProcess(launchPath: "/usr/bin/swift", args: procArgs, cwd: dir)
+
+        // Add parallelism if not provided explicitly
+        let hasJobs = pass.contains(where: { $0 == "--jobs" || $0 == "-j" })
+        var passThrough = pass
+        if !hasJobs {
+            let cores = max(2, ProcessInfo.processInfo.activeProcessorCount)
+            passThrough.insert(contentsOf: ["--jobs", String(cores)], at: 0)
+        }
+
+        if verbose { procArgs.insert("-v", at: 1) }
+        procArgs.append(contentsOf: passThrough)
+        let header = "Running: swift \(procArgs.joined(separator: " "))\nDirectory: \(dir)"
+        if !quiet { fputs("\(header)\n", stderr) }
+        let title: String
+        switch cmd { case "build": title = "Building"; case "test": title = "Testing"; case "run": title = "Running"; default: title = cmd.capitalized }
+        let code = runProcess(launchPath: "/usr/bin/swift", args: procArgs, cwd: dir, showProgress: showProgress && !quiet, title: title, echoOutput: !quiet)
         if code != 0 { exit(Int32(code)) }
     }
 
@@ -117,7 +144,12 @@ struct TutorCLI {
         }
     }
 
-    static func runProcess(launchPath: String, args: [String], cwd: String) -> Int32 {
+    static func runProcess(launchPath: String,
+                           args: [String],
+                           cwd: String,
+                           showProgress: Bool = true,
+                           title: String = "Working",
+                           echoOutput: Bool = true) -> Int32 {
         let task = Process()
         task.executableURL = URL(fileURLWithPath: launchPath)
         task.arguments = args
@@ -125,9 +157,61 @@ struct TutorCLI {
         var env = ProcessInfo.processInfo.environment
         env["CLANG_MODULE_CACHE_PATH"] = env["CLANG_MODULE_CACHE_PATH"] ?? ((cwd as NSString).appendingPathComponent(".modulecache"))
         task.environment = env
-        task.standardOutput = FileHandle.standardOutput
-        task.standardError = FileHandle.standardError
-        do { try task.run(); task.waitUntilExit(); return task.terminationStatus } catch { return 1 }
+
+        let stdoutPipe = Pipe()
+        let stderrPipe = Pipe()
+        task.standardOutput = stdoutPipe
+        task.standardError = stderrPipe
+
+        let start = Date()
+        let reporter = ProgressReporter(enabled: showProgress, title: title)
+
+        func handle(line: String) {
+            // Basic phase detection for status
+            let s = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            if s.isEmpty { return }
+            if s.contains("Fetching") { reporter.set(status: "Fetching packages") }
+            else if s.contains("Updating") { reporter.set(status: "Updating dependencies") }
+            else if s.contains("Resolving") || s.contains("Resolve") { reporter.set(status: "Resolving package graph") }
+            else if s.contains("Compiling") {
+                // SwiftPM verbose format: "Compiling <module> <file>.swift"
+                if let mod = s.split(separator: " ").dropFirst().first { reporter.set(status: "Compiling \(mod)") }
+                else { reporter.set(status: "Compiling sources") }
+            }
+            else if s.contains("Linking") { reporter.set(status: "Linking targets") }
+            else if s.contains("Testing") || s.contains("Test Suite") { reporter.set(status: "Running tests") }
+            else if s.lowercased().contains("building for") { reporter.set(status: "Preparing build") }
+            else if s.contains("Build complete!") { reporter.set(status: "Build complete") }
+            else if s.contains("error:") { reporter.set(status: "Error encountered") }
+            else if s.contains("Executing") { reporter.set(status: "Launching app") }
+        }
+
+        // Stream output
+        let outHandle = stdoutPipe.fileHandleForReading
+        let errHandle = stderrPipe.fileHandleForReading
+        outHandle.readabilityHandler = { fh in
+            let data = fh.availableData
+            if data.isEmpty { return }
+            if echoOutput { FileHandle.standardOutput.write(data) }
+            if let text = String(data: data, encoding: .utf8) { text.split(separator: "\n", omittingEmptySubsequences: false).forEach { handle(line: String($0)) } }
+        }
+        errHandle.readabilityHandler = { fh in
+            let data = fh.availableData
+            if data.isEmpty { return }
+            if echoOutput { FileHandle.standardError.write(data) }
+            if let text = String(data: data, encoding: .utf8) { text.split(separator: "\n", omittingEmptySubsequences: false).forEach { handle(line: String($0)) } }
+        }
+
+        do {
+            reporter.start()
+            try task.run()
+            task.waitUntilExit()
+        } catch {
+            reporter.stop(final: false)
+            return 1
+        }
+        reporter.stop(final: true, elapsed: Date().timeIntervalSince(start))
+        return task.terminationStatus
     }
 }
 
@@ -138,6 +222,69 @@ func writeFile(_ path: String, _ content: String) throws {
     let url = URL(fileURLWithPath: path)
     try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
     try content.write(to: url, atomically: true, encoding: .utf8)
+}
+
+// MARK: - Live Progress Reporter
+
+final class ProgressReporter {
+    private let enabled: Bool
+    private let title: String
+    private var timer: DispatchSourceTimer?
+    private var start = Date()
+    private var lastStatus = "Starting"
+    private var spinnerIndex = 0
+    private let spinnerFrames = ["⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧","⠇","⠏"]
+    private let isTTY: Bool
+
+    init(enabled: Bool, title: String) {
+        self.enabled = enabled
+        self.title = title
+        #if canImport(Darwin)
+        self.isTTY = isatty(STDERR_FILENO) != 0
+        #else
+        self.isTTY = true
+        #endif
+    }
+
+    func start() {
+        guard enabled else { return }
+        start = Date()
+        fputs("\(title)…\n", stderr)
+        let t = DispatchSource.makeTimerSource(queue: .global())
+        t.schedule(deadline: .now(), repeating: .milliseconds(200))
+        t.setEventHandler { [weak self] in self?.tick() }
+        timer = t
+        t.resume()
+    }
+
+    func set(status: String) {
+        guard enabled else { return }
+        lastStatus = status
+    }
+
+    private func tick() {
+        let elapsed = Int(Date().timeIntervalSince(start))
+        let frame = spinnerFrames[spinnerIndex % spinnerFrames.count]
+        spinnerIndex += 1
+        if isTTY {
+            fputs("\r\u{001B}[2K\(frame) \(title): \(lastStatus) (\(elapsed)s)", stderr)
+            fflush(stderr)
+        } else {
+            // Non-TTY: emit a line every 3 seconds
+            if spinnerIndex % 15 == 0 { fputs("… \(title.lowercased()) — \(lastStatus) (\(elapsed)s)\n", stderr) }
+        }
+    }
+
+    func stop(final: Bool, elapsed: TimeInterval? = nil) {
+        guard enabled else { return }
+        timer?.cancel()
+        if isTTY { fputs("\r\u{001B}[2K", stderr) }
+        if final {
+            let e = elapsed ?? Date().timeIntervalSince(start)
+            let fmt = String(format: "%.2f", e)
+            fputs("✓ \(title) completed in \(fmt)s\n", stderr)
+        }
+    }
 }
 
 func insertElement(in text: String, arrayName: String, element: String) -> String {

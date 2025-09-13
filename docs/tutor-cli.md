@@ -25,7 +25,17 @@ Or install via the CLI itself (after building it once):
   - `tutor help`
 - Options:
   - `--dir <path>` to target a different folder
+  - `--verbose` or `-v` to print SwiftPM verbose output
+  - `--no-progress` to disable the live status line
+  - `--quiet` to suppress Swift output and show only status
+  - Auto-parallelism: if `--jobs/-j` is not provided, uses CPU cores
   - `--` to pass flags to underlying `swift` (e.g., `-- -c release`)
+
+## Live Status Feedback
+
+- The CLI shows a live status line with spinner and elapsed time.
+- Phases include: resolving, fetching/updating, compiling, linking, testing, and running.
+- Use `--verbose` to see detailed SwiftPM lines while the status updates.
 
 ## Scaffold (advanced)
 
