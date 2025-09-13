@@ -549,7 +549,6 @@ final class MIDIBridge {
         defer { plPointer.deallocate() }
         var packet = MIDIPacketListInit(plPointer)
         packet = MIDIPacketListAdd(plPointer, capacity, packet, 0, bytes.count, bytes)
-        guard packet != nil else { return }
         MIDIReceived(source, plPointer)
     }
     deinit { if source != 0 { MIDIEndpointDispose(source) }; if client != 0 { MIDIClientDispose(client) } }
@@ -776,7 +775,7 @@ final class LocalHTTPServer: @unchecked Sendable {
             guard let self else { return }
             var buf = buffer
             if let d = data { buf.append(d) }
-            if let error = error { self.close(conn); return }
+            if error != nil { self.close(conn); return }
             if isComplete { self.close(conn); return }
 
             if let range = buf.range(of: Data("\r\n\r\n".utf8)) {
