@@ -7,11 +7,8 @@ let package = Package(
     products: [
         .executable(name: "HelloFountainAI", targets: ["HelloFountainAI"])
     ],
-    dependencies: [
-        .package(url: "https://github.com/Fountain-Coach/the-fountainai.git", branch: "main")
-    ],
     targets: [
-        .executableTarget(name: "HelloFountainAI", dependencies: [.product(name: "LLMGatewayAPI", package: "the-fountainai")]),
+        .executableTarget(name: "HelloFountainAI"),
         .testTarget(
             name: "HelloFountainAITests",
             dependencies: ["HelloFountainAI"],

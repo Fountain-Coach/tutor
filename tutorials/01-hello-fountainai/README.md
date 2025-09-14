@@ -73,7 +73,7 @@ swift --version
 Expected: Swift prints a 6.1+ version.
 
 ## 2. Scaffold the app
-Run the provided setup script, which generates a local Swift package in this folder (Hello uses the `ai` profile by default to include FountainAI client libraries):
+Run the provided setup script, which generates a local Swift package in this folder (Hello uses the `basic` profile by default for a dependency‑free, fast build):
 
 ```bash
 ./setup.sh
@@ -95,7 +95,7 @@ xed .
 - Outputs: creates/overwrites those two files in this folder.
 - Re-running: safe; it will overwrite the files. Delete them to reset.
 
-Advanced: `./setup.sh --upstream` (or `SETUP_MODE=upstream ./setup.sh`) uses a Swift-based scaffolder (no awk) to scaffold in the upstream monorepo, then generates a local Package.swift that depends on the upstream FountainAI package so imports like `FountainAICore`, `FountainAIAdapters`, and `LLMGatewayAPI` resolve. If the build or network is blocked, it automatically falls back to the local minimal package.
+Advanced: `./setup.sh --upstream` (or `SETUP_MODE=upstream ./setup.sh`) uses a Swift-based scaffolder to scaffold in the upstream monorepo; you can include client libraries by adding `--profile ai` (slower, requires network). If upstream or network is unavailable, the script falls back to the local minimal package.
 
 ## 3. Build and run
 Build the project and launch it locally:
