@@ -780,10 +780,14 @@ extension TutorCLI {
     static func runTail(args: inout [String]) {
         var errorsOnly = false
         var interval: Double = 0.5
+        var fromStart = false
+        var initialCount: Int = 10
         if let idx = args.firstIndex(of: "--errors-only") { errorsOnly = true; args.remove(at: idx) }
         if let idx = args.firstIndex(of: "--interval"), idx + 1 < args.count, let d = Double(args[idx+1]) {
             interval = max(0.1, d); args.removeSubrange(idx...(idx+1))
         }
+        if let idx = args.firstIndex(of: "--from-start") { fromStart = true; args.remove(at: idx) }
+        if let idx = args.firstIndex(of: "--events"), idx + 1 < args.count, let n = Int(args[idx+1]) { initialCount = max(0, n); args.removeSubrange(idx...(idx+1)) }
         let (dir, _) = parseDir(args: &args)
         let tutorDir = (dir as NSString).appendingPathComponent(".tutor")
         let statusPath = (tutorDir as NSString).appendingPathComponent("status.json")
@@ -810,9 +814,17 @@ extension TutorCLI {
             }
         }
 
-        // Initial status
+        // Print initial status and last N events for immediate context
         maybePrintStatus()
-        fputs("Tailing \(eventsPath) — interval=\(interval)s\(errorsOnly ? "; errors only" : "")\n", stderr)
+        if FileManager.default.fileExists(atPath: eventsPath) {
+            let initial = fromStart ? readAllEvents(path: eventsPath) : lastEvents(path: eventsPath, count: initialCount, errorsOnly: errorsOnly)
+            if !initial.isEmpty {
+                let label = fromStart ? "all" : String(initial.count)
+                print("\nShowing \(label) existing event(s)\(errorsOnly ? " (errors only)" : ""):")
+                for e in initial { print(oneLineEvent(e)) }
+            }
+        }
+        fputs("\nTailing \(eventsPath) — interval=\(interval)s\(errorsOnly ? "; errors only" : "")\n", stderr)
         // Main loop
         while true {
             maybePrintStatus()
