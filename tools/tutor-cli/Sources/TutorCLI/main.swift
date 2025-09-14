@@ -802,10 +802,25 @@ extension TutorCLI {
 extension TutorCLI {
     static func runViewer(args: inout [String]) {
         let (dir, _) = parseDir(args: &args)
-        var env = ProcessInfo.processInfo.environment
-        env["TUTOR_DIR"] = dir
-        let viewerPath = (FileManager.default.currentDirectoryPath as NSString).appendingPathComponent("tools/teatro-viewer")
-        // Spawn: swift run --disable-sandbox (Teatro viewer)
+        // Locate the viewer project by walking up and checking tools/teatro-viewer
+        func findViewerProject(start: String) -> String? {
+            var url = URL(fileURLWithPath: start)
+            let fm = FileManager.default
+            for _ in 0..<6 {
+                let candidate = url.appendingPathComponent("tools/teatro-viewer")
+                if fm.fileExists(atPath: candidate.appendingPathComponent("Package.swift").path) {
+                    return candidate.path
+                }
+                if url.path == "/" { break }
+                url.deleteLastPathComponent()
+            }
+            return nil
+        }
+        guard let viewerPath = findViewerProject(start: FileManager.default.currentDirectoryPath) else {
+            fputs("Viewer project not found. Expected tools/teatro-viewer near repo root.\n", stderr)
+            exit(2)
+        }
+        // Spawn: swift run --disable-sandbox (Teatro viewer); pass TUTOR_DIR for file polling
         let code = runProcess(launchPath: "/usr/bin/swift",
                               args: ["run", "--disable-sandbox"],
                               cwd: viewerPath,

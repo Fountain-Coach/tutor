@@ -14,6 +14,7 @@ struct TeatroViewerApp: App {
     }
 }
 
+@MainActor
 final class Model: ObservableObject {
     @Published var status: [String: Any] = [:]
     @Published var events: [[String: Any]] = []
@@ -29,13 +30,15 @@ final class Model: ObservableObject {
     }
     func startPolling() {
         timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in self?.poll() }
+        // Use selector-based timer to avoid @Sendable capture issues
+        timer = Timer.scheduledTimer(timeInterval: 0.5, target: self, selector: #selector(tick), userInfo: nil, repeats: true)
         poll()
     }
+    @objc private func tick() { poll() }
     private func poll() {
         if let data = FileManager.default.contents(atPath: statusPath),
            let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            DispatchQueue.main.async { self.status = obj }
+            self.status = obj
         }
         if let attrs = try? FileManager.default.attributesOfItem(atPath: eventsPath), let n = attrs[.size] as? NSNumber {
             let size = n.uint64Value
@@ -48,7 +51,7 @@ final class Model: ObservableObject {
                               let obj = try? JSONSerialization.jsonObject(with: d) as? [String: Any] else { return nil }
                         return obj
                     }
-                    DispatchQueue.main.async { self.events.append(contentsOf: new) }
+                    self.events.append(contentsOf: new)
                 }
                 lastSize = size
             }
@@ -123,4 +126,3 @@ struct MainView: View {
         return (try? String(data: JSONSerialization.data(withJSONObject: e), encoding: .utf8)) ?? String(describing: e)
     }
 }
-
