@@ -57,7 +57,7 @@ struct TutorCLI {
           status     [--dir <path>] [--json] [--watch]
           serve      [--dir <path>] [--port <n>|--port 0] [--no-auth] [--dev] [--socket <path>] [--midi] [--midi-virtual-name <name>]
           doctor     [--dir <path>]  (runs local server health checks)
-          tail       [--dir <path>] [--interval <s>] [--errors-only]
+          tail       [--dir <path>] [--interval <s>] [--errors-only] [--from-start] [--events <n>]
           log        [--dir <path>] [--json] [--events <n>] [--errors-only]
 
         Examples:

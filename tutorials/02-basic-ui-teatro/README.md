@@ -52,8 +52,8 @@ When you press the button, the handler runs and prints to the console.
 Compile the project and launch the generated SwiftUI app:
 
 ```bash
-../../tools/tutor-cli/.build/release/tutor-cli build
-../../tools/tutor-cli/.build/release/tutor-cli run
+tutor build
+tutor run
 ```
 
 Expected: A window appears with “Welcome to Teatro” and a “Tap Me” button. Tapping the button prints “Button was tapped” in the console.
@@ -62,7 +62,7 @@ Expected: A window appears with “Welcome to Teatro” and a “Tap Me” butto
 Execute the unit tests:
 
 ```bash
-../../tools/tutor-cli/.build/release/tutor-cli test
+tutor test
 ```
 Expected: Tests pass. Add tests for any helpers you extract from the UI logic.
 

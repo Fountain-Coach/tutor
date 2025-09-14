@@ -72,8 +72,8 @@ task.resume()
 Compile and run the package:
 
 ```bash
-../../tools/tutor-cli/.build/release/tutor-cli build
-../../tools/tutor-cli/.build/release/tutor-cli run
+tutor build
+tutor run
 ```
 
 ## Troubleshooting
@@ -83,7 +83,7 @@ Compile and run the package:
 
 ## Run tests
 ```bash
-../../tools/tutor-cli/.build/release/tutor-cli test
+tutor test
 ```
 Add tests that validate your request-building logic (headers, JSON encoding) and response parsing.
 

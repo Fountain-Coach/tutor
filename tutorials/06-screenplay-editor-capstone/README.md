@@ -45,8 +45,8 @@ For a detailed end-to-end build, consult the [PDF guide](./Building%20a%20macOS%
 Compile and launch the project:
 
 ```bash
-../../tools/tutor-cli/.build/release/tutor-cli build
-../../tools/tutor-cli/.build/release/tutor-cli run
+tutor build
+tutor run
 ```
 
 Expected: The GUI shows a main scene with buttons to save notes, play a cue, and request AI help. Console logs reflect events and actions.
@@ -60,7 +60,7 @@ Tip (macOS app bundle): Inside the FountainAI monorepo, you can bundle with `Scr
 
 ## Run tests
 ```bash
-../../tools/tutor-cli/.build/release/tutor-cli test
+tutor test
 ```
 Add tests for persistence helpers, cue timing calculations, and any model-formatting logic.
 

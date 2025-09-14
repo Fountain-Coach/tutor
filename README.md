@@ -65,6 +65,14 @@ Expected: the app prints a greeting in the terminal. Open the project in Xcode w
 - Choose a tutorial (e.g., `cd tutorials/01-hello-fountainai`) and scaffold: `./setup.sh --upstream`.
 - Build/Run/Test: `tutor build`, `tutor run`, `tutor test`.
 
+### Rebuild/Upgrade the CLI
+
+- `cd tools/tutor-cli && swift package clean && rm -rf .build .swiftpm .modulecache .swift-module-cache`
+- `mkdir -p .modulecache .swift-module-cache`
+- `swift build -c release -Xcc -fmodules-cache-path=.modulecache -Xswiftc -module-cache-path -Xswiftc .swift-module-cache`
+- Install updated binary: `.build/release/tutor install`
+- Verify: `which tutor` and `tutor --help` (no viewer listed)
+
 ## Troubleshooting
 
 - tutor: command not found

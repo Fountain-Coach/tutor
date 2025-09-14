@@ -14,6 +14,16 @@ Or install via the CLI itself (after building it once):
 
 - `cd tools/tutor-cli && swift build -c release && .build/release/tutor install`
 
+## Rebuild / Upgrade
+
+- Clean and rebuild the CLI when upgrading:
+  - `cd tools/tutor-cli`
+  - `swift package clean && rm -rf .build .swiftpm .modulecache .swift-module-cache`
+  - `mkdir -p .modulecache .swift-module-cache`
+  - `swift build -c release -Xcc -fmodules-cache-path=.modulecache -Xswiftc -module-cache-path -Xswiftc .swift-module-cache`
+  - Run directly or install: `.build/release/tutor install`
+  - Verify: `which tutor` and `tutor --help` (viewer not listed)
+
 ## Usage
 
 - From any tutorial folder:
@@ -52,7 +62,8 @@ Or install via the CLI itself (after building it once):
 
 - Stream live status and events (terminal-only; no GUI build):
   - `tutor tail` (from a tutorial folder)
-  - Options: `--interval <s>` (default 0.5s), `--errors-only`
+  - Options: `--interval <s>` (default 0.5s), `--errors-only`, `--from-start`, `--events <n>` (initial events to show)
+  - Behavior: seeds `.tutor/status.json` and `.tutor/events.ndjson` if missing and emits an initial `tail-start` event so output is immediate.
 - Take a one-shot snapshot and summary:
   - Human: `tutor log`
   - JSON: `tutor log --json`

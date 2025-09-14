@@ -68,15 +68,15 @@ With these building blocks you can manage persistent collections of notes in you
 Compile and execute the package:
 
 ```bash
-../../tools/tutor-cli/.build/release/tutor-cli build
-../../tools/tutor-cli/.build/release/tutor-cli run
+tutor build
+tutor run
 ```
 
 Expected: The program runs without error. Add temporary `print(notes.count)` or `print(first.text)` statements to verify the data roundtrip locally.
 
 ## Run tests
 ```bash
-../../tools/tutor-cli/.build/release/tutor-cli test
+tutor test
 ```
 Add tests for save/load helpers and edge cases (empty file, corrupt JSON) as you expand functionality.
 
