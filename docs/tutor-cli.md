@@ -87,7 +87,8 @@ Or install via the CLI itself (after building it once):
 - Unix socket mode: `--socket <path>` starts a Unix domain socket that streams SSE lines (no HTTP headers) for sandboxed environments.
 
 OpenAPI Spec:
-- (Optional) You can keep a spec in your repo for reference; the server focuses on minimal endpoints for agents.
+- Keep a spec in your repo for reference (e.g., `docs/openapi/tutor-serve.yaml`).
+- The local server does not host `/openapi.yaml`, `/docs`, or `/docs-lite`; it only exposes minimal agent endpoints.
 
 ### Unix Socket Client Examples
 
