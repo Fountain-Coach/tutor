@@ -298,14 +298,16 @@ final class RunContext: @unchecked Sendable {
     private var sawLinkerError = false
     private var sawResolveError = false
     private var sawNetworkError = false
+    private var lastAnnouncedPhase: String = ""
+    private var announcedStart = false
 
     init(title: String, command: String, statusPath: String?, eventPath: String?, reporter: ProgressReporter, midi: MIDIBridge?, ciMode: Bool, start: Date) {
         self.title = title; self.command = command; self.statusPath = statusPath; self.eventPath = eventPath; self.reporter = reporter; self.midi = midi; self.ciMode = ciMode; self.start = start
     }
 
-    func onStart() { q.sync { writeEvent(type: "start", payload: ["title": title, "command": command]); writeStatus() } }
-    func onCrash(message: String) { q.sync { writeEvent(type: "crash", payload: ["message": message]); writeStatus(final: true, exitCode: 1) } }
-    func onFinish(exitCode: Int32) { q.sync { writeEvent(type: "end", payload: ["exitCode": exitCode]); writeStatus(final: true, exitCode: exitCode) } }
+    func onStart() { q.sync { writeEvent(type: "start", payload: ["title": title, "command": command]); writeStatus(); if !announcedStart { announcedStart = true; fputs("\n== \(title) — started (command=\(command))\n", stderr) } } }
+    func onCrash(message: String) { q.sync { writeEvent(type: "crash", payload: ["message": message]); writeStatus(final: true, exitCode: 1); fputs("\n!! Crash: \(message)\n", stderr) } }
+    func onFinish(exitCode: Int32) { q.sync { writeEvent(type: "end", payload: ["exitCode": exitCode]); writeStatus(final: true, exitCode: exitCode); fputs("\n== Finished — exitCode=\(exitCode)\n", stderr) } }
 
     func process(line: String) {
         let s = line.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -321,6 +323,12 @@ final class RunContext: @unchecked Sendable {
             else if s.contains("Build complete!") { phase = "completed"; reporter.set(status: "Build complete") }
             else if s.contains("Executing") { phase = "running"; reporter.set(status: "Launching app") }
 
+            // Announce phase changes visibly (inline), independent of SwiftPM output
+            if lastAnnouncedPhase != phase && !phase.isEmpty {
+                lastAnnouncedPhase = phase
+                fputs("\n→ Phase: \(phase)\n", stderr)
+            }
+
             if s.contains("error:") || s.contains("warning:") {
                 let lineRange = NSRange(location: 0, length: (s as NSString).length)
                 if let m = errorRegex?.firstMatch(in: s, options: [], range: lineRange) {
@@ -331,6 +339,7 @@ final class RunContext: @unchecked Sendable {
                     let e: [String: Any] = ["file": file, "line": ln, "column": col, "message": msg]
                     errors.append(e)
                     writeEvent(type: "error", payload: ["error": e])
+                    fputs("\nerror: \(file):\(ln):\(col): \(msg)\n", stderr)
                     reporter.set(status: "Error encountered")
                     if ciMode { print("::error file=\(file),line=\(ln),col=\(col)::\(msg.replacingOccurrences(of: "\n", with: " "))") }
                     if msg.localizedCaseInsensitiveContains("linker command failed") || msg.localizedCaseInsensitiveContains("Undefined symbols") { sawLinkerError = true }
@@ -344,6 +353,7 @@ final class RunContext: @unchecked Sendable {
                     let w: [String: Any] = ["file": file, "line": ln, "column": col, "message": msg]
                     warnings.append(w)
                     writeEvent(type: "warning", payload: ["warning": w])
+                    fputs("\nwarning: \(file):\(ln):\(col): \(msg)\n", stderr)
                     if ciMode { print("::warning file=\(file),line=\(ln),col=\(col)::\(msg.replacingOccurrences(of: "\n", with: " "))") }
                 }
             }
@@ -734,6 +744,25 @@ extension TutorCLI {
         let tutorDir = (dir as NSString).appendingPathComponent(".tutor")
         let statusPath = (tutorDir as NSString).appendingPathComponent("status.json")
         let eventsPath = (tutorDir as NSString).appendingPathComponent("events.ndjson")
+        // Ensure .tutor exists and seed minimal files so tail always shows something
+        try? FileManager.default.createDirectory(atPath: tutorDir, withIntermediateDirectories: true)
+        if !FileManager.default.fileExists(atPath: statusPath) {
+            _ = writeJSONAtomic(path: statusPath, object: [
+                "title": "Tutor Tail",
+                "command": "tail",
+                "phase": "idle",
+                "status": "Waiting for events",
+                "elapsed": 0,
+                "timestamp": ISO8601DateFormatter().string(from: Date())
+            ])
+        }
+        if !FileManager.default.fileExists(atPath: eventsPath) {
+            _ = appendNDJSON(path: eventsPath, object: [
+                "type": "log",
+                "line": "tail-start",
+                "ts": ISO8601DateFormatter().string(from: Date())
+            ])
+        }
         let doctorPath = (tutorDir as NSString).appendingPathComponent("doctor.json")
 
         // Snapshot
