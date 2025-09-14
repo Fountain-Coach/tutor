@@ -82,6 +82,9 @@ Expected: the app prints a greeting in the terminal. Open the project in Xcode w
   - Verify: `swift --version` shows 6.1+.
 - Network/clone failures during `./setup.sh --upstream`
   - Check connectivity, VPN/proxy, and retry. The script resumes from a clean temp dir.
+- SwiftPM override identity mismatch (e.g., FountainStore)
+  - SwiftPM requires the override directory name to match the dependency identity.
+  - For `FountainStore`, identity is `fountain-store`. If you pointed to `../03-data-persistence-fountainstore`, use a symlink or rename the folder to `../fountain-store` and update your path/override.
 - Gateway/API errors at runtime
   - Set env vars before `tutor run`: `export LLM_GATEWAY_URL=http://localhost:8080/api/v1` and optionally `export FOUNTAIN_AI_KEY=sk-...`.
 - Permission denied on scripts

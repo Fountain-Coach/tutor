@@ -43,7 +43,33 @@ This guide explains how tutorial apps depend on the FountainAI monorepo using Sw
 - Build fails on macOS: install Xcode CLT and accept the license; try `xcodebuild -runFirstLaunch`.
 - Network issues: retry after connectivity restores; SwiftPM resumes from cache when possible.
 
+### Package Override Identity Mismatch (SwiftPM)
+
+Symptom (in CI or local):
+
+> unable to override package 'FountainStore' because its identity 'fountain-store' doesn't match override's identity (directory name) '03-data-persistence-fountainstore'
+
+Why:
+- SwiftPM uses the last path component to determine a package’s identity for local overrides. The directory name must match the dependency identity. For FountainStore, the identity is `fountain-store`.
+
+Fix options:
+- Rename the override directory to match the identity, or create a symlink with the correct name and point your override path to it.
+  - Example symlink:
+    - `ln -s "$PWD/tutorials/03-data-persistence-fountainstore" "$PWD/../fountain-store"`
+    - Update your override path to `../fountain-store`.
+- Update the path in your manifest (or workspace override) to reference the correctly named directory:
+  - Instead of `../03-data-persistence-fountainstore`, use `../fountain-store`.
+
+CI helper snippet (GitHub Actions):
+
+```yaml
+- name: Prepare SwiftPM overrides
+  run: |
+    ln -s "$GITHUB_WORKSPACE/tutorials/03-data-persistence-fountainstore" "$GITHUB_WORKSPACE/overrides/fountain-store" || true
+```
+
+Summary: the override directory name must equal the dependency identity (`fountain-store`). Rename the directory or point your override to a correctly named directory/symlink.
+
 ## Rationale
 - Profiles keep tutorial builds fast and focused while enabling deeper integration when needed.
 - App-facing modules avoid server executables and plugins unless you explicitly opt in.
-

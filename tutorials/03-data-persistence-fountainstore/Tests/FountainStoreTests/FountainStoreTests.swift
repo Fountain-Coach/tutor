@@ -1,7 +1,7 @@
 import XCTest
-@testable import FountainStore
+@testable import TutorialFountainStore
 
-final class FountainStoreTests: XCTestCase {
+final class TutorialFountainStoreTests: XCTestCase {
     func testGreetReturnsHello() {
         XCTAssertEqual(greet(), "Hello, FountainAI!")
     }

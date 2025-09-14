@@ -2,24 +2,29 @@
 import PackageDescription
 
 let package = Package(
-    name: "FountainStore",
+    name: "TutorialFountainStore",
     platforms: [ .macOS(.v14) ],
     products: [
-        .executable(name: "FountainStore", targets: ["FountainStore"])
+        .executable(name: "TutorialFountainStore", targets: ["TutorialFountainStore"])
     ],
     dependencies: [
         .package(url: "https://github.com/Fountain-Coach/the-fountainai.git", branch: "main")
     ],
     targets: [
         .executableTarget(
-            name: "FountainStore",
-            dependencies: [.product(name: "FountainAIAdapters", package: "the-fountainai"),\n                .product(name: "FountainAICore", package: "the-fountainai"),\n                .product(name: "PersistAPI", package: "the-fountainai"),\n                .product(name: "FountainStoreClient", package: "the-fountainai")],
+            name: "TutorialFountainStore",
+            dependencies: [
+                .product(name: "FountainAIAdapters", package: "the-fountainai"),
+                .product(name: "FountainAICore", package: "the-fountainai"),
+                .product(name: "PersistAPI", package: "the-fountainai"),
+                .product(name: "FountainStoreClient", package: "the-fountainai")
+            ],
             path: ".",
             sources: ["main.swift", "Greeter.swift"]
         ),
         .testTarget(
-            name: "FountainStoreTests",
-            dependencies: ["FountainStore"],
+            name: "TutorialFountainStoreTests",
+            dependencies: ["TutorialFountainStore"],
             path: "Tests/FountainStoreTests"
         )
     ]
