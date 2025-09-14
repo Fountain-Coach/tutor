@@ -919,8 +919,11 @@ final class LocalHTTPServer: @unchecked Sendable {
 
         switch (method, urlPath) {
         case ("GET", "/"):
-            let json = "{""message"":""Tutor Serve — Use /health, /status, /summary, /events; run 'tutor viewer' for native UI""}"
-            respond(conn, status: 200, headers: ["Content-Type": "application/json"], body: Data(json.utf8))
+            let obj: [String: Any] = [
+                "message": "Tutor Serve — Use /health, /status, /summary, /events; run 'tutor viewer' for native UI"
+            ]
+            let body = (try? JSONSerialization.data(withJSONObject: obj)) ?? Data("{}".utf8)
+            respond(conn, status: 200, headers: ["Content-Type": "application/json"], body: body)
         case ("GET", "/health"):
             respond(conn, status: 200, headers: ["Content-Type": "application/json"], body: Data("{\"ok\":true}".utf8))
         case ("GET", "/status"):
@@ -1098,57 +1101,7 @@ final class LocalHTTPServer: @unchecked Sendable {
 }
 
 // Load embedded OpenAPI resources from SPM bundle
-func loadOpenAPI(path: String) -> Data? {
-    #if SWIFT_PACKAGE
-    let bundle = Bundle.module
-    if let url = bundle.url(forResource: path, withExtension: nil, subdirectory: "OpenAPI") {
-        return try? Data(contentsOf: url)
-    }
-    #endif
-    // Fallbacks for test/runtime environments where resources may not be bundled as expected
-    let fm = FileManager.default
-    let candidates = [
-        "tools/tutor-cli/Sources/TutorCLI/OpenAPI/\(path)",
-        "Sources/TutorCLI/OpenAPI/\(path)",
-        "../Sources/TutorCLI/OpenAPI/\(path)",
-        "../../Sources/TutorCLI/OpenAPI/\(path)",
-        "../../../Sources/TutorCLI/OpenAPI/\(path)",
-    ]
-    for c in candidates {
-        if fm.fileExists(atPath: c) { return try? Data(contentsOf: URL(fileURLWithPath: c)) }
-    }
-    let docs = [
-        "docs/openapi/\(path)",
-        "./docs/openapi/\(path)",
-        "../../docs/openapi/\(path)",
-        "../../../docs/openapi/\(path)",
-        "../../../../docs/openapi/\(path)",
-    ]
-    for c in docs {
-        if fm.fileExists(atPath: c) { return try? Data(contentsOf: URL(fileURLWithPath: c)) }
-    }
-    return nil
-}
-
-// Offline-friendly docs fallback HTML
-func docsLiteHTML() -> String {
-    return """
-    <!doctype html><html><head><meta charset=\"utf-8\"><title>Tutor Serve API (Lite)</title>
-    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
-    <style>body{font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:1rem} pre{white-space:pre-wrap;word-wrap:break-word;background:#f6f8fa;padding:1rem;border-radius:8px}</style>
-    </head><body>
-    <h1>Tutor Serve API (Lite)</h1>
-    <p>This minimal view fetches the OpenAPI spec served by the CLI and renders it as text. Use <code>/docs</code> or <code>/redoc</code> for full UI (requires CDN access). If those fail, this page still works offline.</p>
-    <pre id=\"spec\">Loading /openapi.yaml ...</pre>
-    <script>
-    fetch('/openapi.yaml')
-      .then(r=>r.text())
-      .then(t=>{document.getElementById('spec').textContent=t})
-      .catch(e=>{document.getElementById('spec').textContent='Failed to load: '+e});
-    </script>
-    </body></html>
-    """
-}
+// Browser UIs removed; no OpenAPI resource loading.
 
 // Build a summary from status + events files (mirrors --json-summary output)
 func makeSummary(statusPath: String, eventsPath: String) -> [String: Any] {
