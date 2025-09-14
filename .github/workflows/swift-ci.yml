@@ -23,6 +23,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Prepare SwiftPM overrides (FountainStore identity)
+        run: |
+          # Ensure any local override paths can target a correctly named directory
+          ln -s "$GITHUB_WORKSPACE/tutorials/03-data-persistence-fountainstore" "$GITHUB_WORKSPACE/tutorials/fountain-store" || true
+          ln -s "$GITHUB_WORKSPACE/tutorials/03-data-persistence-fountainstore" "$GITHUB_WORKSPACE/fountain-store" || true
+          echo "Symlinks prepared:" && ls -l tutorials | sed -n '1,120p'
+
       - name: Show Swift version
         run: swift --version
 
