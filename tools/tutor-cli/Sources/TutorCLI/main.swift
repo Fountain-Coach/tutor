@@ -8,7 +8,7 @@ import Darwin
 #endif
 
 struct CLI {
-    enum Command: String { case scaffold, build, run, test, status, serve, doctor, tail, log, viewer, install, help }
+    enum Command: String { case scaffold, build, run, test, status, serve, doctor, tail, log, install, help }
 }
 
 struct TutorCLI {
@@ -38,8 +38,6 @@ struct TutorCLI {
             runTail(args: &rest)
         case .log:
             runLog(args: &rest)
-        case .viewer:
-            runViewer(args: &rest)
         case .install:
             runInstall(args: &rest)
         case .help:
@@ -61,7 +59,6 @@ struct TutorCLI {
           doctor     [--dir <path>]  (runs local server health checks)
           tail       [--dir <path>] [--interval <s>] [--errors-only]
           log        [--dir <path>] [--json] [--events <n>] [--errors-only]
-          viewer     [--dir <path>]  (launch native viewer for status/events)
 
         Examples:
           tutor build --dir tutorials/01-hello-fountainai
@@ -953,7 +950,7 @@ extension TutorCLI {
             if actualPort > 0 {
                 if let token { print("Serving on http://127.0.0.1:\(actualPort)  token=\(token)") }
                 else { print("Serving on http://127.0.0.1:\(actualPort) (auth disabled)") }
-                print("Endpoints: /health, /status, /summary, /events | Use 'tutor viewer' for native UI")
+            print("Endpoints: /health, /status, /summary, /events | Use 'tutor tail' for live streaming or 'tutor log' for snapshots")
             }
             // Keep process alive indefinitely (simple, robust)
             while true { Thread.sleep(forTimeInterval: 60) }
@@ -964,71 +961,7 @@ extension TutorCLI {
     }
 }
 
-extension TutorCLI {
-    static func runViewer(args: inout [String]) {
-        let (dir, _) = parseDir(args: &args)
-        // Locate the viewer project by walking up and checking tools/teatro-viewer
-        func findViewerProject(start: String) -> String? {
-            var url = URL(fileURLWithPath: start)
-            let fm = FileManager.default
-            for _ in 0..<6 {
-                let candidate = url.appendingPathComponent("tools/teatro-viewer")
-                if fm.fileExists(atPath: candidate.appendingPathComponent("Package.swift").path) {
-                    return candidate.path
-                }
-                if url.path == "/" { break }
-                url.deleteLastPathComponent()
-            }
-            return nil
-        }
-        guard let viewerPath = findViewerProject(start: FileManager.default.currentDirectoryPath) else {
-            fputs("Viewer project not found. Expected tools/teatro-viewer near repo root.\n", stderr)
-            exit(2)
-        }
-        // Prefer prebuilt binary if available to avoid rebuilds
-        let fm = FileManager.default
-        let candidates = [
-            (viewerPath as NSString).appendingPathComponent(".build/release/teatro-viewer"),
-            (viewerPath as NSString).appendingPathComponent(".build/Release/teatro-viewer"),
-            (viewerPath as NSString).appendingPathComponent(".build/debug/teatro-viewer"),
-            (viewerPath as NSString).appendingPathComponent(".build/Debug/teatro-viewer"),
-        ]
-        if let bin = candidates.first(where: { fm.isExecutableFile(atPath: $0) }) {
-            let code = runProcess(launchPath: bin,
-                                  args: [],
-                                  cwd: viewerPath,
-                                  showProgress: false,
-                                  title: "Viewer",
-                                  echoOutput: true,
-                                  statusFile: nil,
-                                  eventFile: nil,
-                                  command: "run",
-                                  jsonSummary: false,
-                                  ciMode: false,
-                                  midiEnabled: false,
-                                  midiName: nil,
-                                  extraEnv: ["TUTOR_DIR": dir])
-            if code != 0 { exit(code) }
-            return
-        }
-        // Fallback: swift run --disable-sandbox (build then run)
-        let code = runProcess(launchPath: "/usr/bin/swift",
-                              args: ["run", "--disable-sandbox"],
-                              cwd: viewerPath,
-                              showProgress: true,
-                              title: "Viewer",
-                              echoOutput: true,
-                              statusFile: nil,
-                              eventFile: nil,
-                              command: "run",
-                              jsonSummary: false,
-                              ciMode: false,
-                              midiEnabled: false,
-                              midiName: nil,
-                              extraEnv: ["TUTOR_DIR": dir])
-        if code != 0 { exit(code) }
-    }
-}
+// viewer command removed in breaking change; prefer tail/log
 
 final class LocalHTTPServer: @unchecked Sendable {
     private let port: Int
@@ -1126,7 +1059,7 @@ final class LocalHTTPServer: @unchecked Sendable {
         switch (method, urlPath) {
         case ("GET", "/"):
             let obj: [String: Any] = [
-                "message": "Tutor Serve — Use /health, /status, /summary, /events; run 'tutor viewer' for native UI"
+                "message": "Tutor Serve — Use /health, /status, /summary, /events; prefer 'tutor tail' or 'tutor log'"
             ]
             let body = (try? JSONSerialization.data(withJSONObject: obj)) ?? Data("{}".utf8)
             respond(conn, status: 200, headers: ["Content-Type": "application/json"], body: body)

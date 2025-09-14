@@ -148,13 +148,10 @@ OpenAPI Spec:
   - Build: `swiftc unix_sse_client.swift -o unix-sse`
   - Run: `./unix-sse /tmp/tutor.sse`
 
-### Native Viewer (Teatro‑Style)
+### Viewer Deprecated
 
-- Launch the macOS viewer for status/events:
-  - `tutor viewer` (run from a tutorial folder)
-- Shows status (phase, elapsed, exit code, errors) and live events.
-- If `.tutor` is empty, run `tutor doctor` or any `tutor build/test` to seed files.
-- Performance: the CLI prefers a prebuilt `teatro-viewer` binary in `tools/teatro-viewer/.build/*/teatro-viewer` when available; otherwise it falls back to `swift run` to build then launch.
+- The native viewer is deprecated and removed from the CLI.
+- Use `tutor tail` for live, terminal-based streaming and `tutor log` for snapshots and summaries.
 
 ## MIDI Output (Experimental)
 

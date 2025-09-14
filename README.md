@@ -45,10 +45,9 @@ Expected: the app prints a greeting in the terminal. Open the project in Xcode w
 - To explore the full platform, clone the upstream monorepo and run/build services there.
 - On macOS, bundle GUI targets with `Scripts/make_app.sh <Name>` and launch `dist/<Name>.app`.
 
-### Native Viewer (Teatro‑Style)
+### Viewer Deprecated
 
-- Launch the macOS viewer for status/events: `tutor viewer` (from a tutorial folder)
-- Prefers a prebuilt `teatro-viewer` binary when present; falls back to `swift run`.
+- The native viewer is deprecated. Prefer terminal-first workflow with `tutor tail` and `tutor log`.
 
 ## Prerequisites
 
