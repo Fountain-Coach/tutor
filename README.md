@@ -27,6 +27,8 @@ Primers and deep dives
 6. Build and run the app from the tutorial folder:
    - `tutor build`
    - `tutor run`
+   - Tail: `tutor tail` (streams live status/events in the terminal)
+   - Snapshot: `tutor log` (prints a snapshot; writes `.tutor/doctor.json`)
 
 More on the CLI: see docs/tutor-cli.md. Use `tutor --help` anytime.
 
@@ -42,6 +44,11 @@ Expected: the app prints a greeting in the terminal. Open the project in Xcode w
 
 - To explore the full platform, clone the upstream monorepo and run/build services there.
 - On macOS, bundle GUI targets with `Scripts/make_app.sh <Name>` and launch `dist/<Name>.app`.
+
+### Native Viewer (Teatro‑Style)
+
+- Launch the macOS viewer for status/events: `tutor viewer` (from a tutorial folder)
+- Prefers a prebuilt `teatro-viewer` binary when present; falls back to `swift run`.
 
 ## Prerequisites
 

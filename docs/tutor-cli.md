@@ -48,6 +48,18 @@ Or install via the CLI itself (after building it once):
   - `--no-status-file` to skip writing `status.json`
   - `--status-file <path>` and `--event-file <path>` to override defaults
 
+## Tail & Log
+
+- Stream live status and events (terminal-only; no GUI build):
+  - `tutor tail` (from a tutorial folder)
+  - Options: `--interval <s>` (default 0.5s), `--errors-only`
+- Take a one-shot snapshot and summary:
+  - Human: `tutor log`
+  - JSON: `tutor log --json`
+  - Options: `--events <n>` to limit included events, `--errors-only` to include only error events
+- Doctor summary for LLMs/tools:
+  - `tutor log` writes `.tutor/doctor.json` with a concise summary (category, hint, counts), same schema as `/summary`.
+
 ## Local Server (Agents)
 
 - Minimal endpoints for automation:
@@ -142,6 +154,7 @@ OpenAPI Spec:
   - `tutor viewer` (run from a tutorial folder)
 - Shows status (phase, elapsed, exit code, errors) and live events.
 - If `.tutor` is empty, run `tutor doctor` or any `tutor build/test` to seed files.
+- Performance: the CLI prefers a prebuilt `teatro-viewer` binary in `tools/teatro-viewer/.build/*/teatro-viewer` when available; otherwise it falls back to `swift run` to build then launch.
 
 ## MIDI Output (Experimental)
 

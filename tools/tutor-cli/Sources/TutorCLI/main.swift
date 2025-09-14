@@ -8,7 +8,7 @@ import Darwin
 #endif
 
 struct CLI {
-    enum Command: String { case scaffold, build, run, test, status, serve, doctor, viewer, install, help }
+    enum Command: String { case scaffold, build, run, test, status, serve, doctor, tail, log, viewer, install, help }
 }
 
 struct TutorCLI {
@@ -34,6 +34,10 @@ struct TutorCLI {
             runServe(args: &rest)
         case .doctor:
             await runDoctor(args: &rest)
+        case .tail:
+            runTail(args: &rest)
+        case .log:
+            runLog(args: &rest)
         case .viewer:
             runViewer(args: &rest)
         case .install:
@@ -55,7 +59,8 @@ struct TutorCLI {
           status     [--dir <path>] [--json] [--watch]
           serve      [--dir <path>] [--port <n>|--port 0] [--no-auth] [--dev] [--socket <path>] [--midi] [--midi-virtual-name <name>]
           doctor     [--dir <path>]  (runs local server health checks)
-          viewer     [--dir <path>]  (launch native viewer for status/events)
+          tail       [--dir <path>] [--interval <s>] [--errors-only]
+          log        [--dir <path>] [--json] [--events <n>] [--errors-only]
           viewer     [--dir <path>]  (launch native viewer for status/events)
 
         Examples:
@@ -611,6 +616,46 @@ func appendNDJSON(path: String, object: [String: Any]) -> Bool {
     }
 }
 
+// Read entire NDJSON events file as array of JSON objects
+func readAllEvents(path: String) -> [[String: Any]] {
+    guard let data = FileManager.default.contents(atPath: path),
+          let text = String(data: data, encoding: .utf8) else { return [] }
+    var arr: [[String: Any]] = []
+    arr.reserveCapacity(text.split(separator: "\n", omittingEmptySubsequences: true).count)
+    for line in text.split(separator: "\n", omittingEmptySubsequences: true) {
+        if let obj = try? JSONSerialization.jsonObject(with: Data(String(line).utf8)) as? [String: Any] {
+            arr.append(obj)
+        }
+    }
+    return arr
+}
+
+// Tail last N events (optionally filtering to errors only)
+func lastEvents(path: String, count: Int?, errorsOnly: Bool) -> [[String: Any]] {
+    let all = readAllEvents(path: path)
+    let filtered: [[String: Any]] = errorsOnly ? all.filter { e in
+        if let t = e["type"] as? String, t == "error" { return true }
+        if e["error"] != nil { return true }
+        return false
+    } : all
+    if let n = count, n > 0, filtered.count > n {
+        return Array(filtered.suffix(n))
+    }
+    return filtered
+}
+
+// Pretty one-line format for events
+func oneLineEvent(_ e: [String: Any]) -> String {
+    if let t = e["type"] as? String, t == "warning", let w = e["warning"] as? [String: Any], let m = w["message"] as? String {
+        return "warning: \(m)"
+    }
+    if let t = e["type"] as? String, t == "error", let w = e["error"] as? [String: Any], let m = w["message"] as? String {
+        return "error: \(m)"
+    }
+    if let l = e["line"] as? String { return l }
+    return (try? String(data: JSONSerialization.data(withJSONObject: e), encoding: .utf8)) ?? String(describing: e)
+}
+
 // Categorize failure and provide a concise hint
 func categorizeFailure(command: String, phase: String, code: Int32, sawTestFailure: Bool, sawLinkerError: Bool, sawResolveError: Bool, sawNetworkError: Bool, errors: [[String: Any]]) -> (String, String) {
     if code == 0 { return ("success", "") }
@@ -672,6 +717,126 @@ extension TutorCLI {
             }
         } else {
             printOnce()
+        }
+    }
+}
+
+// MARK: - Tail & Log
+
+extension TutorCLI {
+    static func runLog(args: inout [String]) {
+        var json = false
+        var errorsOnly = false
+        var eventsCount: Int? = nil
+        if let idx = args.firstIndex(of: "--json") { json = true; args.remove(at: idx) }
+        if let idx = args.firstIndex(of: "--errors-only") { errorsOnly = true; args.remove(at: idx) }
+        if let idx = args.firstIndex(of: "--events"), idx + 1 < args.count, let n = Int(args[idx+1]) {
+            eventsCount = n; args.removeSubrange(idx...(idx+1))
+        }
+        let (dir, _) = parseDir(args: &args)
+        let tutorDir = (dir as NSString).appendingPathComponent(".tutor")
+        let statusPath = (tutorDir as NSString).appendingPathComponent("status.json")
+        let eventsPath = (tutorDir as NSString).appendingPathComponent("events.ndjson")
+        let doctorPath = (tutorDir as NSString).appendingPathComponent("doctor.json")
+
+        // Snapshot
+        var statusObj: [String: Any] = [:]
+        if let data = FileManager.default.contents(atPath: statusPath),
+           let o = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            statusObj = o
+        }
+        let eventsObj = lastEvents(path: eventsPath, count: eventsCount, errorsOnly: errorsOnly)
+
+        // Write doctor.json summary
+        let summary = makeSummary(statusPath: statusPath, eventsPath: eventsPath)
+        _ = writeJSONAtomic(path: doctorPath, object: summary)
+
+        if json {
+            let out: [String: Any] = [
+                "status": statusObj,
+                "events": eventsObj,
+                "summary": summary
+            ]
+            if let data = try? JSONSerialization.data(withJSONObject: out, options: [.prettyPrinted]),
+               let s = String(data: data, encoding: .utf8) { print(s) }
+            return
+        }
+
+        // Human-readable snapshot
+        let title = statusObj["title"] as? String ?? "Work"
+        let phase = statusObj["phase"] as? String ?? ""
+        let stat = statusObj["status"] as? String ?? ""
+        let elapsed = statusObj["elapsed"] as? Int ?? 0
+        let final = (statusObj["final"] as? Bool) ?? false
+        let code = statusObj["exitCode"] as? Int ?? 0
+        print("\(title): \(stat) [phase=\(phase)] (\(elapsed)s)")
+        if final { print(code == 0 ? "Result: success" : "Result: failure (code \(code))") }
+        if !eventsObj.isEmpty {
+            print("\nLast \(eventsCount ?? eventsObj.count) event(s)\(errorsOnly ? " (errors only)" : ""):")
+            for e in eventsObj { print("- \(oneLineEvent(e))") }
+        } else {
+            print("\nNo events found.")
+        }
+        print("\nWrote summary → \(doctorPath)")
+    }
+
+    static func runTail(args: inout [String]) {
+        var errorsOnly = false
+        var interval: Double = 0.5
+        if let idx = args.firstIndex(of: "--errors-only") { errorsOnly = true; args.remove(at: idx) }
+        if let idx = args.firstIndex(of: "--interval"), idx + 1 < args.count, let d = Double(args[idx+1]) {
+            interval = max(0.1, d); args.removeSubrange(idx...(idx+1))
+        }
+        let (dir, _) = parseDir(args: &args)
+        let tutorDir = (dir as NSString).appendingPathComponent(".tutor")
+        let statusPath = (tutorDir as NSString).appendingPathComponent("status.json")
+        let eventsPath = (tutorDir as NSString).appendingPathComponent("events.ndjson")
+
+        var lastStatusPrinted: (phase: String, status: String, elapsed: Int, code: Int, final: Bool) = ("", "", 0, 0, false)
+        var lastSize: UInt64 = 0
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: eventsPath), let n = attrs[.size] as? NSNumber { lastSize = n.uint64Value }
+        let eventsURL = URL(fileURLWithPath: eventsPath)
+
+        func maybePrintStatus() {
+            guard let data = FileManager.default.contents(atPath: statusPath),
+                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+            let phase = obj["phase"] as? String ?? ""
+            let stat = obj["status"] as? String ?? ""
+            let elapsed = obj["elapsed"] as? Int ?? 0
+            let final = (obj["final"] as? Bool) ?? false
+            let code = obj["exitCode"] as? Int ?? 0
+            if lastStatusPrinted.phase != phase || lastStatusPrinted.status != stat || lastStatusPrinted.elapsed != elapsed || lastStatusPrinted.final != final || lastStatusPrinted.code != code {
+                let title = obj["title"] as? String ?? "Work"
+                let header = "\(title): \(stat) [phase=\(phase)] (\(elapsed)s)" + (final ? (code == 0 ? " — success" : " — failure (code \(code))") : "")
+                fputs("\n== \(header)\n", stderr)
+                lastStatusPrinted = (phase, stat, elapsed, code, final)
+            }
+        }
+
+        // Initial status
+        maybePrintStatus()
+        fputs("Tailing \(eventsPath) — interval=\(interval)s\(errorsOnly ? "; errors only" : "")\n", stderr)
+        // Main loop
+        while true {
+            maybePrintStatus()
+            if let attrs = try? FileManager.default.attributesOfItem(atPath: eventsPath), let n = attrs[.size] as? NSNumber {
+                let size = n.uint64Value
+                if size > lastSize, let h = try? FileHandle(forReadingFrom: eventsURL) {
+                    defer { try? h.close() }
+                    try? h.seek(toOffset: lastSize)
+                    if let data = try? h.readToEnd(), let text = String(data: data, encoding: .utf8) {
+                        for line in text.split(separator: "\n", omittingEmptySubsequences: true) {
+                            guard let obj = try? JSONSerialization.jsonObject(with: Data(String(line).utf8)) as? [String: Any] else { continue }
+                            if errorsOnly {
+                                if !((obj["type"] as? String) == "error" || obj["error"] != nil) { continue }
+                            }
+                            print(oneLineEvent(obj))
+                        }
+                    }
+                    lastSize = size
+                }
+            }
+            Thread.sleep(forTimeInterval: interval)
         }
     }
 }
@@ -820,7 +985,33 @@ extension TutorCLI {
             fputs("Viewer project not found. Expected tools/teatro-viewer near repo root.\n", stderr)
             exit(2)
         }
-        // Spawn: swift run --disable-sandbox (Teatro viewer); pass TUTOR_DIR for file polling
+        // Prefer prebuilt binary if available to avoid rebuilds
+        let fm = FileManager.default
+        let candidates = [
+            (viewerPath as NSString).appendingPathComponent(".build/release/teatro-viewer"),
+            (viewerPath as NSString).appendingPathComponent(".build/Release/teatro-viewer"),
+            (viewerPath as NSString).appendingPathComponent(".build/debug/teatro-viewer"),
+            (viewerPath as NSString).appendingPathComponent(".build/Debug/teatro-viewer"),
+        ]
+        if let bin = candidates.first(where: { fm.isExecutableFile(atPath: $0) }) {
+            let code = runProcess(launchPath: bin,
+                                  args: [],
+                                  cwd: viewerPath,
+                                  showProgress: false,
+                                  title: "Viewer",
+                                  echoOutput: true,
+                                  statusFile: nil,
+                                  eventFile: nil,
+                                  command: "run",
+                                  jsonSummary: false,
+                                  ciMode: false,
+                                  midiEnabled: false,
+                                  midiName: nil,
+                                  extraEnv: ["TUTOR_DIR": dir])
+            if code != 0 { exit(code) }
+            return
+        }
+        // Fallback: swift run --disable-sandbox (build then run)
         let code = runProcess(launchPath: "/usr/bin/swift",
                               args: ["run", "--disable-sandbox"],
                               cwd: viewerPath,
