@@ -4,6 +4,10 @@ Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the F
 
 Call FountainAI’s OpenAPI endpoints from any HTTP client. This tutorial focuses on the LLM Gateway’s generate API using environment-driven base URLs; you can target a hosted deployment or your locally running gateway.
 
+> Local vs Upstream
+> - Local mode (default) is dependency-free and builds/tests offline. It does not include `LLMGatewayAPI`.
+> - For real client libraries and API calls, scaffold upstream: `./setup.sh --profile ai --upstream`.
+
 ## Before you begin
 - Install Tutor CLI and add to PATH (see docs/tutor-cli.md and docs/shells-and-git.md).
 - Run all commands from `tutorials/05-ai-integration-openapi/`.

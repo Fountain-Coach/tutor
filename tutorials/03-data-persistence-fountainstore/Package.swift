@@ -7,20 +7,11 @@ let package = Package(
     products: [
         .executable(name: "TutorialFountainStore", targets: ["TutorialFountainStore"])
     ],
-    dependencies: [
-        .package(url: "https://github.com/Fountain-Coach/the-fountainai.git", branch: "main")
-    ],
     targets: [
         .executableTarget(
             name: "TutorialFountainStore",
-            dependencies: [
-                .product(name: "FountainAIAdapters", package: "the-fountainai"),
-                .product(name: "FountainAICore", package: "the-fountainai"),
-                .product(name: "PersistAPI", package: "the-fountainai"),
-                .product(name: "FountainStoreClient", package: "the-fountainai")
-            ],
             path: ".",
-            sources: ["main.swift", "Greeter.swift"]
+            sources: ["main.swift", "Greeter.swift", "FountainStore.swift"]
         ),
         .testTarget(
             name: "TutorialFountainStoreTests",

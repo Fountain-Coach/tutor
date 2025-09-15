@@ -1,15 +1,3 @@
-#!/usr/bin/env bash
-# Usage: ./setup.sh [BundleID]
-../../Scripts/setup-tutorial.sh HelloCsound "$@"
-
-# Ensure the Csound file is present in the generated package
-mkdir -p Sources/HelloCsound
-cp hello.csd Sources/HelloCsound/hello.csd
-
-# Generate CsoundPlayer.swift if absent (simulated synthesizer)
-CSWIFT="Sources/HelloCsound/CsoundPlayer.swift"
-if [[ ! -f "$CSWIFT" ]]; then
-  cat > "$CSWIFT" <<'SWIFT'
 import Foundation
 
 public enum CsoundError: Error, LocalizedError {
@@ -62,46 +50,3 @@ public struct CsoundPlayer {
         return Result(sampleRate: sampleRate, durationSeconds: duration, samples: samples)
     }
 }
-SWIFT
-fi
-
-# Generate main.swift that uses the player if absent
-MAIN="Sources/HelloCsound/main.swift"
-cat > "$MAIN" <<'SWIFT'
-import Foundation
-
-print(greet())
-do {
-    let result = try CsoundPlayer().play()
-    print("Generated sample count: \(result.samples.count)")
-} catch {
-    fputs("Csound simulation error: \(error)\n", stderr)
-}
-SWIFT
-
-# Add an extra test that validates sample generation (keeps original greet test intact)
-TEST_DIR="Tests/HelloCsoundTests"
-mkdir -p "$TEST_DIR"
-PLAYER_TEST="$TEST_DIR/CsoundPlayerTests.swift"
-if [[ ! -f "$PLAYER_TEST" ]]; then
-  cat > "$PLAYER_TEST" <<'SWIFT'
-import XCTest
-@testable import HelloCsound
-
-final class CsoundPlayerTests: XCTestCase {
-    func testGeneratesSamples() throws {
-        let result = try CsoundPlayer().play()
-        XCTAssertGreaterThan(result.samples.count, 1000)
-    }
-}
-SWIFT
-fi
-
-# Ensure Package.swift declares the hello.csd resource for the HelloCsound target
-if grep -q 'name: "HelloCsound"' Package.swift; then
-  if ! grep -q '\.copy("hello.csd")' Package.swift; then
-    # Replace the simple target with one that includes resources
-    perl -0777 -pe 's/\.executableTarget\(name: \"HelloCsound\"\)/.executableTarget(name: \"HelloCsound\", resources: [.copy(\"hello.csd\")])/' -i Package.swift
-    echo "Patched Package.swift to include hello.csd as a resource"
-  fi
-fi

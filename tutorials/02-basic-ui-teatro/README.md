@@ -58,6 +58,8 @@ tutor run
 
 Expected: A window appears with “Welcome to Teatro” and a “Tap Me” button. Tapping the button prints “Button was tapped” in the console.
 
+Note: In local mode, this tutorial is UI‑first. The console run prints a placeholder message. Open the folder in Xcode (`xed .`) to view the UI and edit `MainScene.teatro`.
+
 ## 5. Run tests
 Execute the unit tests:
 

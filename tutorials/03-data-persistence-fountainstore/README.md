@@ -4,6 +4,10 @@ Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the F
 
 Persist simple data using **FountainStore** within a minimal SPM app. This tutorial uses the template workflow (no full Gateway/services required) and focuses on saving and loading a tiny `Note` model.
 
+> Local vs Upstream
+> - Local mode (default) is dependency-free and includes a tiny simulated `FountainStore` (`FountainStore.swift`) so everything builds and tests offline.
+> - For the real FountainAI persistence libraries, use upstream scaffolding: `./setup.sh --profile persist --upstream`.
+
 ## Before you begin
 - Install Tutor CLI and add to PATH (see docs/tutor-cli.md and docs/shells-and-git.md).
 - Run all commands from `tutorials/03-data-persistence-fountainstore/`.

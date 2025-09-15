@@ -7,13 +7,9 @@ let package = Package(
     products: [
         .executable(name: "OpenAPI", targets: ["OpenAPI"])
     ],
-    dependencies: [
-        .package(url: "https://github.com/Fountain-Coach/the-fountainai.git", branch: "main")
-    ],
     targets: [
         .executableTarget(
             name: "OpenAPI",
-            dependencies: [.product(name: "FountainAIAdapters", package: "the-fountainai"),\n                .product(name: "FountainAICore", package: "the-fountainai"),\n                .product(name: "LLMGatewayAPI", package: "the-fountainai")],
             path: ".",
             sources: ["main.swift", "Greeter.swift"]
         ),
