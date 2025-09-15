@@ -5,13 +5,24 @@ let package = Package(
     name: "HelloFountainAI",
     platforms: [ .macOS(.v14) ],
     products: [
-        .executable(name: "HelloFountainAI", targets: ["HelloFountainAI"])
+        .executable(name: "HelloFountainAI", targets: ["HelloFountainAI"]),
+        .executable(name: "HelloCsound", targets: ["HelloCsound"])
     ],
     targets: [
         .executableTarget(
             name: "HelloFountainAI",
-            path: ".",
-            sources: ["main.swift"]
+            path: "Sources/HelloFountainAI"
+        ),
+        .executableTarget(
+            name: "HelloCsound",
+            path: "Sources/HelloCsound",
+            resources: [
+                .copy("hello.csd")
+            ]
+        ),
+        .testTarget(
+            name: "HelloCsoundTests",
+            dependencies: ["HelloCsound"]
         )
     ]
 )
