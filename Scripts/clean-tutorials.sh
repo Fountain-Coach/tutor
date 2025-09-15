@@ -4,8 +4,10 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
-echo "Cleaning build artifacts (.build, caches, .tutor) across tutorials…"
-find tutorials -maxdepth 2 -type d \( -name .build -o -name .modulecache -o -name .swift-module-cache -o -name .tutor \) -print -exec rm -rf {} +
+echo "Cleaning build artifacts (.build, caches, .tutor, .swiftpm) across tutorials (recursive)…"
+find tutorials -type d \
+  \( -name .build -o -name .modulecache -o -name .swift-module-cache -o -name .tutor -o -name .swiftpm \) \
+  -print -exec rm -rf {} +
 
 echo "Removing generated sources from tutorials where setup.sh creates them…"
 
@@ -19,5 +21,7 @@ rm -f tutorials/02-basic-ui-teatro/Package.swift || true
 rm -rf tutorials/02-basic-ui-teatro/Sources || true
 rm -rf tutorials/02-basic-ui-teatro/Tests || true
 
-echo "Clean complete."
+# Remove stray nested tutorial caches (from mis-invocations)
+rm -rf tutorials/*/tutorials || true
 
+echo "Clean complete."
