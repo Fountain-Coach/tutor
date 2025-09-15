@@ -92,12 +92,13 @@ Expected: the app prints a greeting in the terminal. Open the project in Xcode w
 
 ## Tutorials
 
-- [01 – Hello FountainAI](tutorials/01-hello-fountainai/README.md)
-- [02 – Basic UI with Teatro](tutorials/02-basic-ui-teatro/README.md)
-- [03 – Data Persistence with FountainStore](tutorials/03-data-persistence-fountainstore/README.md)
-- [04 – Multimedia with MIDI2](tutorials/04-multimedia-midi2/README.md)
-- [05 – AI Integration with OpenAPI](tutorials/05-ai-integration-openapi/README.md)
-- [06 – Screenplay Editor Capstone](tutorials/06-screenplay-editor-capstone/README.md)
+- [01 – Hello Csound](tutorials/01-hello-csound/README.md)
+- [02 – Hello FountainAI](tutorials/01-hello-fountainai/README.md)
+- [03 – Basic UI with Teatro](tutorials/02-basic-ui-teatro/README.md)
+- [04 – Data Persistence with FountainStore](tutorials/03-data-persistence-fountainstore/README.md)
+- [05 – Multimedia with MIDI2](tutorials/04-multimedia-midi2/README.md)
+- [06 – AI Integration with OpenAPI](tutorials/05-ai-integration-openapi/README.md)
+- [07 – Screenplay Editor Capstone](tutorials/06-screenplay-editor-capstone/README.md)
 ## Profiles (Optional)
 
 Use `--profile <name>` to include client libraries from the upstream FountainAI package:
