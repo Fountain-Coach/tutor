@@ -16,6 +16,7 @@ Primers and deep dives
 - Shells and Git (zsh PATH, Git basics): docs/shells-and-git.md
 - Tutor CLI (install and usage): docs/tutor-cli.md
 - Dependency management (profiles, SwiftPM): docs/dependency-management-deep-dive.md
+- Tutorial agent rules (auto-enforced in tutorials/): tutorials/AGENTS.md
 
 ## Getting Started
 
@@ -33,6 +34,8 @@ Primers and deep dives
 More on the CLI: see docs/tutor-cli.md. Use `tutor --help` anytime.
 
 Expected: the app prints a greeting in the terminal. Open the project in Xcode with `xed .` if you prefer a GUI.
+
+Tip: To reset tutorials to a clean starter state (removing caches and generated sources), run `Scripts/clean-tutorials.sh` from the repo root.
 
 ## What You Can Do
 
@@ -99,6 +102,15 @@ Expected: the app prints a greeting in the terminal. Open the project in Xcode w
 - [05 – Multimedia with MIDI2](tutorials/04-multimedia-midi2/README.md)
 - [06 – AI Integration with OpenAPI](tutorials/05-ai-integration-openapi/README.md)
 - [07 – Screenplay Editor Capstone](tutorials/06-screenplay-editor-capstone/README.md)
+
+## Contributing
+
+- Follow Conventional Commits for messages: `docs:`, `feat:`, `fix:`, `chore:`.
+- Keep PRs focused and reference the affected tutorial paths.
+- For tutorial changes, follow the rules in `tutorials/AGENTS.md` (auto‑enforced). In short:
+  - Use template‑first workflow; prefer local scaffolds for offline builds.
+  - Do not commit generated sources or caches; use `Scripts/clean-tutorials.sh` to reset.
+  - Ensure each lesson builds and tests from its folder with `tutor build/test`.
 ## Profiles (Optional)
 
 Use `--profile <name>` to include client libraries from the upstream FountainAI package:

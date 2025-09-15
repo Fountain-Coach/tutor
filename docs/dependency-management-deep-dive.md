@@ -13,6 +13,12 @@ This guide explains how tutorial apps depend on the FountainAI monorepo using Sw
 - Upstream mode (`./setup.sh --upstream`): Copies a scaffolded `main.swift` and generates a local `Package.swift` that points to the FountainAI monorepo.
 - Profiles (`--profile <name>`): Select which client libraries your target depends on; SwiftPM builds only those and their transitives.
 
+### Generated Files Policy (Starter Repo)
+- Keep the repository clean: do not commit generated sources or caches. Setup scripts recreate them on demand.
+- Allowed to commit: `README.md`, `setup.sh`, minimal `Package.swift` for resources, small text assets (e.g., `hello.csd`).
+- Not to commit: generated `Sources/**/main.swift`, lesson simulators (e.g., `CsoundPlayer.swift`), and build caches (`.build/`, `.modulecache/`, `.swift-module-cache/`, `.tutor/`, `.swiftpm/`).
+- Use `Scripts/clean-tutorials.sh` to remove caches and generated sources across all lessons.
+
 ## Profiles → Modules
 - basic: no external modules.
 - ai: `FountainAICore`, `FountainAIAdapters`, `LLMGatewayAPI`.

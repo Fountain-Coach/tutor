@@ -240,9 +240,67 @@ jobs:
             tutorials/01-hello-fountainai/.tutor/status.json
             tutorials/01-hello-fountainai/.tutor/events.ndjson
             tutorials/01-hello-fountainai/.tutor/summary.json
+
+### Sandbox/Offline CI (Local Mode)
+
+If your CI runner has restricted network access, run tutorials in local mode and avoid fetching upstream dependencies:
+
+```yaml
+- name: Build Tutor CLI
+  run: |
+    cd tools/tutor-cli
+    swift build -c release
+    echo "$GITHUB_WORKSPACE/tools/tutor-cli/.build/release" >> $GITHUB_PATH
+
+- name: Setup (local)
+  working-directory: tutorials/01-hello-csound
+  run: |
+    chmod +x setup.sh
+    ./setup.sh --local --profile basic
+
+- name: Build/Test (local)
+  run: |
+    tutor build --dir tutorials/01-hello-csound --quiet --json-summary || true
+    tutor test  --dir tutorials/01-hello-csound --quiet --json-summary || true
+```
+
+Notes:
+- For UI‑first lessons like 02‑basic‑ui‑teatro, prefer `--local --profile basic` to avoid networked dependencies.
+- Use `Scripts/clean-tutorials.sh` between jobs to reset generated sources and caches.
 ```
 
 - Tips:
   - Use `--ci` to emit `::error` and `::warning` annotations for parsed diagnostics.
   - Pair with `--quiet` and `--json-summary` to keep logs succinct and capture structured results.
   - Upload `.tutor/` artifacts for PR triage and debugging.
+
+## Tutorial Quickstart (Local Mode)
+
+- 01 – Hello Csound
+  - `cd tutorials/01-hello-csound`
+  - `./setup.sh` (generates missing sources and bundles `hello.csd`)
+  - `tutor build && tutor test && tutor run`
+
+- 02 – Basic UI with Teatro (offline/local)
+  - `cd tutorials/02-basic-ui-teatro`
+  - `./setup.sh --local --profile basic` (avoid remote deps)
+  - `tutor build && tutor test && tutor run` (open in Xcode for the UI)
+
+- Others (03–06)
+  - `cd tutorials/<folder>`
+  - `tutor build && tutor test`
+
+## Local vs Upstream
+
+- Local (default): dependency‑free, fast iterations, works offline.
+- Upstream: `./setup.sh --upstream --profile <ai|persist|midi2|capstone|full-client>` to pull FountainAI client libraries. Requires network access.
+
+## Cleaning
+
+- Reset tutorials to a clean starter state and remove caches:
+  - `Scripts/clean-tutorials.sh`
+- The cleaner removes: `.build`, `.modulecache`, `.swift-module-cache`, `.tutor`, `.swiftpm`, and generated sources that `setup.sh` recreates.
+
+## Troubleshooting Tips
+
+- Multiple products error: ensure you’re inside the tutorial folder and that `./setup.sh` generated a local package for that lesson.
