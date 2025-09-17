@@ -33,15 +33,23 @@ let samples = try CsoundPlayer().play()
 print("Generated sample count: \(samples.count)")
 ```
 
-## 3. Build and Run
-Compile the project and launch the program:
+## 3. Build and Run (Hear It)
+Compile the project. By default the program renders samples and prints a count. To also hear the tone, enable playback with `CS_PLAY=1`:
 
 ```bash
 tutor build
 tutor run
 ```
 
-Expected: The console prints the generated sample count.
+Examples:
+
+```bash
+tutor build
+tutor run                       # prints sample count only
+CS_PLAY=1 tutor run             # also plays the tone
+```
+
+Expected: The console prints the generated sample count. With `CS_PLAY=1`, you hear the short tone rendered from the generated samples. On macOS, playback uses `afplay`; if sound output isn’t available, a WAV file is written to your temp folder (and `afplay` may print an error).
 
 ## 4. Tell A Story With Sound
 Music is shaped intent. Start from the included `hello.csd` and try tiny, meaningful changes:

@@ -80,6 +80,7 @@ cat > "$MAIN" <<'SWIFT'
 import Foundation
 
 let useMotif = (ProcessInfo.processInfo.environment["CS_MOTIF"] != nil)
+let shouldPlay = (ProcessInfo.processInfo.environment["CS_PLAY"] != nil)
 
 do {
     if useMotif {
@@ -90,9 +91,11 @@ do {
         )
         let result = try CsoundPlayer().play(csd: csd)
         print("Motif sample count: \(result.samples.count)")
+        if shouldPlay { try play(samples: result.samples, sampleRate: result.sampleRate, seconds: result.durationSeconds) }
     } else {
         let result = try CsoundPlayer().play()
         print("Generated sample count: \(result.samples.count)")
+        if shouldPlay { try play(samples: result.samples, sampleRate: result.sampleRate, seconds: result.durationSeconds) }
     }
 } catch {
     fputs("Csound simulation error: \(error)\n", stderr)
@@ -160,6 +163,72 @@ public func makeMotifCSD(frequencies: [Double], durations: [Double]) -> String {
 }
 SWIFT
 fi
+
+# Lightweight playback helper (optional): enable with CS_PLAY=1
+PLAYBACK="Sources/HelloCsound/Playback.swift"
+cat > "$PLAYBACK" <<'SWIFT'
+import Foundation
+
+public func play(samples: [Float], sampleRate: Int, seconds: Double) throws {
+    // Write a small WAV to a temp file and try to play via 'afplay' (macOS).
+    // If playback isn't available, we still leave the file for manual audition.
+    let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("hello_csound_\(UUID().uuidString).wav")
+    try writeWAV(samples: samples, sampleRate: sampleRate, url: url)
+
+    // Try to launch /usr/bin/afplay; if it fails, just print the path
+    let task = Process()
+    task.executableURL = URL(fileURLWithPath: "/usr/bin/afplay")
+    task.arguments = [url.path]
+    do {
+        try task.run()
+        task.waitUntilExit()
+    } catch {
+        print("Saved WAV to: \(url.path) (audio playback not available)")
+    }
+}
+
+private func writeWAV(samples: [Float], sampleRate: Int, url: URL) throws {
+    // 16-bit PCM mono
+    let numChannels: UInt16 = 1
+    let bitsPerSample: UInt16 = 16
+    let byteRate: UInt32 = UInt32(sampleRate) * UInt32(numChannels) * UInt32(bitsPerSample / 8)
+    let blockAlign: UInt16 = numChannels * (bitsPerSample / 8)
+
+    // Convert float [-1,1] to Int16 little-endian
+    var pcm = Data()
+    pcm.reserveCapacity(samples.count * 2)
+    for s in samples {
+        let v = Int16(max(-1.0, min(1.0, s)) * 32767.0)
+        var le = UInt16(bitPattern: v).littleEndian
+        withUnsafeBytes(of: &le) { pcm.append(contentsOf: $0) }
+    }
+
+    var data = Data()
+    func append(_ s: String) { data.append(s.data(using: .ascii)!) }
+    func append32(_ v: UInt32) { var x = v.littleEndian; withUnsafeBytes(of: &x) { data.append(contentsOf: $0) } }
+    func append16(_ v: UInt16) { var x = v.littleEndian; withUnsafeBytes(of: &x) { data.append(contentsOf: $0) } }
+
+    // RIFF header
+    append("RIFF")
+    append32(UInt32(36 + pcm.count))
+    append("WAVE")
+    // fmt chunk
+    append("fmt ")
+    append32(16) // PCM chunk size
+    append16(1)  // PCM format
+    append16(numChannels)
+    append32(UInt32(sampleRate))
+    append32(byteRate)
+    append16(blockAlign)
+    append16(bitsPerSample)
+    // data chunk
+    append("data")
+    append32(UInt32(pcm.count))
+    data.append(pcm)
+
+    try data.write(to: url)
+}
+SWIFT
 
 # Ensure Package.swift declares the hello.csd resource for the HelloCsound target
 if grep -q 'name: "HelloCsound"' Package.swift; then

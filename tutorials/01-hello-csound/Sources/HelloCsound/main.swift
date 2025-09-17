@@ -1,6 +1,7 @@
 import Foundation
 
 let useMotif = (ProcessInfo.processInfo.environment["CS_MOTIF"] != nil)
+let shouldPlay = (ProcessInfo.processInfo.environment["CS_PLAY"] != nil)
 
 do {
     if useMotif {
@@ -11,9 +12,11 @@ do {
         )
         let result = try CsoundPlayer().play(csd: csd)
         print("Motif sample count: \(result.samples.count)")
+        if shouldPlay { try play(samples: result.samples, sampleRate: result.sampleRate, seconds: result.durationSeconds) }
     } else {
         let result = try CsoundPlayer().play()
         print("Generated sample count: \(result.samples.count)")
+        if shouldPlay { try play(samples: result.samples, sampleRate: result.sampleRate, seconds: result.durationSeconds) }
     }
 } catch {
     fputs("Csound simulation error: \(error)\n", stderr)
