@@ -108,8 +108,12 @@ struct TutorCLI {
         if let idx = args.firstIndex(of: "--midi-virtual-name"), idx + 1 < args.count { midiName = args[idx+1]; args.removeSubrange(idx...(idx+1)) }
 
         let (dir, pass) = parseDir(args: &args)
-        let moduleCache = (dir as NSString).appendingPathComponent(".modulecache")
-        let swiftModuleCache = (dir as NSString).appendingPathComponent(".swift-module-cache")
+        // Resolve to an absolute path so we don't accidentally create nested
+        // paths like "<dir>/tutorials/<dir>/.swift-module-cache" when running
+        // with --dir from the repo root.
+        let absDir = URL(fileURLWithPath: dir).standardizedFileURL.path
+        let moduleCache = (absDir as NSString).appendingPathComponent(".modulecache")
+        let swiftModuleCache = (absDir as NSString).appendingPathComponent(".swift-module-cache")
         try? FileManager.default.createDirectory(atPath: moduleCache, withIntermediateDirectories: true)
         try? FileManager.default.createDirectory(atPath: swiftModuleCache, withIntermediateDirectories: true)
 
