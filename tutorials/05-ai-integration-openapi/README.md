@@ -2,7 +2,7 @@
 
 Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the FountainAI monorepo; build and run locally to explore the concept.
 
-Call FountainAI’s OpenAPI endpoints from any HTTP client. This tutorial focuses on the LLM Gateway’s generate API using environment-driven base URLs; you can target a hosted deployment or your locally running gateway.
+Call FountainAI’s OpenAPI endpoints from any HTTP client. This tutorial focuses on the LLM Gateway’s generate API using a local Gateway you run from source. Only the model request itself is remote: your local Gateway calls the provider (e.g., OpenAI) with your API key; everything else remains on your machine.
 
 > Local vs Upstream
 > - Local mode (default) is dependency-free and builds/tests offline. It does not include `LLMGatewayAPI`.
@@ -27,7 +27,7 @@ Obtain an API key or local token, then expose it to your environment:
 
 ```bash
 export FOUNTAIN_AI_KEY="sk-your-key"
-export LLM_GATEWAY_URL="http://localhost:8080/api/v1"  # example; adjust as needed
+export LLM_GATEWAY_URL="http://localhost:8080/api/v1"
 ```
 
 ## 3. Invoke an AI endpoint

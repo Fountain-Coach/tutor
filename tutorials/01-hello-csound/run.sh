@@ -10,6 +10,8 @@ set -euo pipefail
 #   ./run.sh motif-score [--tempo 90] [--duo]
 #   ./run.sh triad [--quality minor]
 #   ./run.sh triad-score [--quality minor] [--tempo 72]
+#   ./run.sh ai-csd "Return a complete Csound .csd …"  # writes Sources/HelloCsound/hello.csd
+#   ./run.sh ai-csd-hear "…"                           # fetch + play (macOS)
 
 cmd="${1:-}"
 shift || true
@@ -67,6 +69,30 @@ case "$cmd" in
     [[ -n "$tempo" ]] && export LY_TEMPO="$tempo"
     TRIAD_QUALITY="$quality" CS_TRIAD=1 LY_EXPORT=1 run ;;
 
+  ai-csd)
+    prompt="${1:-}"; shift || true
+    if [[ -z "${prompt}" ]]; then echo "Provide a prompt in quotes." >&2; exit 2; fi
+    if [[ -z "${LLM_GATEWAY_URL:-}" ]]; then echo "Set LLM_GATEWAY_URL (e.g., http://localhost:8080/api/v1)" >&2; exit 2; fi
+    # Quick health check before requesting content
+    if ! curl -fsS "${LLM_GATEWAY_URL%/}/health" >/dev/null 2>&1; then
+      echo "Gateway health check failed at ${LLM_GATEWAY_URL%/}/health" >&2
+      echo "Tip: Run 'Scripts/run-gateway-source.sh start --dev --no-auth' from repo root and ensure OPENAI_API_KEY is set." >&2
+      exit 1
+    fi
+    body=$(jq -n --arg p "$prompt" '{model:"fountain-medium", messages:[{role:"user", content:$p}]}')
+    curl -sS "$LLM_GATEWAY_URL/generate" \
+      -H "Authorization: Bearer ${FOUNTAIN_AI_KEY:-}" \
+      -H "Content-Type: application/json" \
+      -d "$body" \
+      | jq -r '.content // .choices[0].message.content' \
+      > Sources/HelloCsound/hello.csd
+    echo "Wrote Sources/HelloCsound/hello.csd" ;;
+
+  ai-csd-hear)
+    prompt="${1:-}"; shift || true
+    "$0" ai-csd "$prompt"
+    "$0" hear ;;
+
   *)
     cat >&2 <<USAGE
 Usage:
@@ -77,7 +103,8 @@ Usage:
   ./run.sh motif-score [--tempo 90] [--duo]  # write motif.ly (and motif_duo.ly when --duo)
   ./run.sh triad [--quality minor]   # play a triad (major default)
   ./run.sh triad-score [--quality minor] [--tempo 72]  # write triad.ly
+  ./run.sh ai-csd "Return a complete Csound .csd …"    # fetch .csd via local Gateway
+  ./run.sh ai-csd-hear "…"                              # fetch + play
 USAGE
     exit 2 ;;
 esac
-

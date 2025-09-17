@@ -106,22 +106,54 @@ i 1 0.90 0.6  ; C5 (longer)
 Re‑run `tutor run` and listen to the printed sample count change with duration. You’re sketching the arc of a phrase.
 
 ## 5. Your AI Composer Companion (Optional)
-FountainAI can help you explore. In upstream mode you can ask the LLM for `.csd` variations (“make a mellow pad with two detuned oscillators” or “turn this motif into a 2‑bar arpeggio”).
+You can ask a local FountainAI Gateway to draft `.csd` ideas for you (“make a mellow pad with two detuned oscillators” or “turn this motif into a 2‑bar arpeggio”).
 
-If you want to try it:
+First, run the Gateway locally from source; see: [Run the FountainAI Gateway Locally](../../docs/run-gateway-locally.md). Important: set a provider key (e.g., `OPENAI_API_KEY`) in your shell before starting the Gateway so it can reach an LLM.
+
+Quick path (no client install):
 
 ```bash
-./setup.sh --upstream --profile ai
 export LLM_GATEWAY_URL=http://localhost:8080/api/v1
-export FOUNTAIN_AI_KEY=YOUR_API_KEY
+export FOUNTAIN_AI_KEY=local-dev-key   # omit if auth is disabled for dev
+
+# Ask for a .csd and write it into this tutorial
+curl "$LLM_GATEWAY_URL/generate" \
+  -H "Authorization: Bearer $FOUNTAIN_AI_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "fountain-medium",
+    "messages": [{"role":"user","content":"Return a complete Csound .csd with a gentle envelope and a 3-note motif at 120 BPM. Output only .csd."}]
+  }' \
+  | jq -r '.content // .choices[0].message.content' \
+  > Sources/HelloCsound/hello.csd
+
+./run.sh hear
 ```
 
-Then adapt a simple Swift call to request a new `.csd` instrument body or score (see [05 – AI Integration with OpenAPI](../05-ai-integration-openapi/README.md)). Paste the result into `hello.csd` and iterate. The AI is not the composer — you are — but it’s a great partner for fast “what‑ifs.”
+If you prefer typed Swift clients, scaffold upstream with `--profile ai` and adapt a small Swift call (see [05 – AI Integration with OpenAPI](../05-ai-integration-openapi/README.md)). Paste results into `hello.csd` and iterate. The AI is not the composer — you are — but it’s a great partner for fast “what‑ifs.”
 
-Prompts you can try:
-- “Write a Csound instrument with a slow attack, release, and subtle vibrato.”
-- “Give me a 4‑note motif at 120 BPM as Csound score lines.”
-- “Detune two oscillators by 3 cents and add a gentle low‑pass.”
+### Why A Gateway? (Perspective)
+- Creative iteration: ask for envelopes, motifs, or full `.csd` variations in seconds — then edit by ear. It’s a fast “composer companion”.
+- Separation of concerns: Csound rendering stays local and deterministic; the Gateway only drafts text (scores/instrument code).
+- Policy and safety: one place to enforce model choice, rate limits, and content policies (now or later).
+- Reproducibility: keep prompts next to source; re‑materialize `.csd` on demand for a given model/version.
+- Collaboration: share prompts/snippets across the team without coupling to an editor or DAW.
+
+Local vs remote (clarity): FountainAI is local — you run the Gateway on your machine and tutorials run locally. The only remote hop is the Gateway’s outbound HTTPS request to a model provider (e.g., OpenAI) using your API key. If you unplug the provider, everything still builds and runs; you just won’t receive generated text until you restore a provider key.
+
+When to stay local (no Gateway):
+- You’re shaping a sound or phrase by hand; you want fully offline, deterministic iteration.
+
+When to use the Gateway:
+- You’re exploring idea space (motifs, envelopes, instrument scaffolds), need many quick drafts, or want centralized policy and logging.
+
+Or use the built-in wrapper for a single command:
+
+```bash
+./run.sh ai-csd "Return a complete Csound .csd with a gentle envelope and a 3-note motif at 120 BPM. Output only .csd." && ./run.sh hear
+```
+
+Tip: See [Run the FountainAI Gateway Locally](../../docs/run-gateway-locally.md) for source build steps and a single copy/paste curl.
 
 ## 6. Run Tests
 Execute the unit tests:
