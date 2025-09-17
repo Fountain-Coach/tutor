@@ -81,17 +81,52 @@ import Foundation
 
 let useMotif = (ProcessInfo.processInfo.environment["CS_MOTIF"] != nil)
 let shouldPlay = (ProcessInfo.processInfo.environment["CS_PLAY"] != nil)
+let exportLily = (ProcessInfo.processInfo.environment["LY_EXPORT"] != nil)
+let tempoBPM = Int(ProcessInfo.processInfo.environment["LY_TEMPO"] ?? "") ?? 120
+let useTriad = (ProcessInfo.processInfo.environment["CS_TRIAD"] != nil)
+let triadQuality = (ProcessInfo.processInfo.environment["TRIAD_QUALITY"] ?? "major").lowercased()
+let exportDuo = (ProcessInfo.processInfo.environment["LY_DUO"] != nil)
 
 do {
-    if useMotif {
+    if useTriad {
+        // Triad: build a simple CSD with p4 as frequency and three voices
+        let root: Double = 261.63 // C4 by default
+        let d: Double = 1.0
+        let csd = makeTriadCSD(rootHz: root, duration: d, quality: triadQuality)
+        let result = try CsoundPlayer().play(csd: csd)
+        print("Triad sample count: \(result.samples.count)")
+        if shouldPlay { try play(samples: result.samples, sampleRate: result.sampleRate, seconds: result.durationSeconds) }
+        if exportLily {
+            let lily = makeLilyPondTriad(rootHz: root, duration: d, tempoBPM: tempoBPM, quality: triadQuality)
+            let url = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("triad.ly")
+            try lily.write(to: url, atomically: true, encoding: .utf8)
+            print("Wrote LilyPond triad: \(url.path)")
+        }
+    } else if useMotif {
         // Exercise: tweak the motif in Motif.swift and re-run with CS_MOTIF=1
+        let freqs: [Double] = [440, 494, 523]
+        let durs:  [Double] = [0.40, 0.40, 0.60]
         let csd = makeMotifCSD(
-            frequencies: [440, 494, 523],
-            durations:   [0.40, 0.40, 0.60]
+            frequencies: freqs,
+            durations:   durs
         )
         let result = try CsoundPlayer().play(csd: csd)
         print("Motif sample count: \(result.samples.count)")
         if shouldPlay { try play(samples: result.samples, sampleRate: result.sampleRate, seconds: result.durationSeconds) }
+        if exportLily {
+            let lily = makeLilyPond(frequencies: freqs, durations: durs, tempoBPM: tempoBPM)
+            let url = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("motif.ly")
+            try lily.write(to: url, atomically: true, encoding: .utf8)
+            print("Wrote LilyPond score: \(url.path)")
+            if exportDuo {
+                // Simple accompaniment: pedal bass one octave below first note for the whole phrase
+                let bassRoot = max(55.0, freqs.first ?? 440.0 / 2.0)
+                let duo = makeLilyPondDuo(melodyFreqs: freqs, durations: durs, bassRootHz: bassRoot, tempoBPM: tempoBPM)
+                let duoURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("motif_duo.ly")
+                try duo.write(to: duoURL, atomically: true, encoding: .utf8)
+                print("Wrote LilyPond duo score: \(duoURL.path)")
+            }
+        }
     } else {
         let result = try CsoundPlayer().play()
         print("Generated sample count: \(result.samples.count)")
@@ -227,6 +262,208 @@ private func writeWAV(samples: [Float], sampleRate: Int, url: URL) throws {
     data.append(pcm)
 
     try data.write(to: url)
+}
+SWIFT
+
+# LilyPond export helper (optional): enable with LY_EXPORT=1
+LILY="Sources/HelloCsound/LilyPond.swift"
+cat > "$LILY" <<'SWIFT'
+import Foundation
+
+public func makeLilyPond(frequencies: [Double], durations: [Double], tempoBPM: Int = 120) -> String {
+    // Map frequencies to nearest MIDI and then to LilyPond note names
+    func midi(for freq: Double) -> Int {
+        guard freq > 0 else { return 60 }
+        return Int((69.0 + 12.0 * log2(freq / 440.0)).rounded())
+    }
+    let names = ["c","cis","d","dis","e","f","fis","g","gis","a","ais","b"]
+    func lilyName(for midiNote: Int) -> String {
+        let pc = (midiNote % 12 + 12) % 12
+        let base = names[pc]
+        // LilyPond: c' is middle C (MIDI 60). Compute relative marks.
+        let d = (midiNote - 60) / 12 // integer division toward zero
+        if d >= 0 {
+            return base + String(repeating: "'", count: d + 1)
+        } else {
+            return base + String(repeating: ",", count: -d - 1)
+        }
+    }
+    // Map durations in seconds to nearest LilyPond duration token (supports dotted)
+    // assuming quarter note = 60/tempo seconds
+    let quarter = 60.0 / Double(tempoBPM)
+    let denoms: [Int] = [1,2,4,8,16]
+    struct Cand { let ratio: Double; let label: String }
+    func lilyDurToken(for sec: Double) -> String {
+        let ratio = sec / quarter // in quarters
+        var best = Cand(ratio: Double.greatestFiniteMagnitude, label: "4")
+        var bestDiff = Double.greatestFiniteMagnitude
+        for d in denoms {
+            let base = 4.0 / Double(d)           // whole=1, half=2, quarter=4, etc.
+            let plain = Cand(ratio: base, label: String(d))
+            let dotted = Cand(ratio: base * 1.5, label: String(d) + ".")
+            for c in [plain, dotted] {
+                let diff = abs(ratio - c.ratio)
+                if diff < bestDiff { bestDiff = diff; best = c }
+            }
+        }
+        return best.label
+    }
+    let notes = zip(frequencies, durations).map { (f, d) -> String in
+        let n = lilyName(for: midi(for: f))
+        let token = lilyDurToken(for: d)
+        return "\(n)\(token)"
+    }.joined(separator: " ")
+    let header = """
+    % Generated by HelloCsound motif export
+    \\version "2.24.0"
+    \\header { title = "Motif" tagline = "FountainAI • Csound • LilyPond" }
+    """
+    let tempo = "\\tempo 4 = \(tempoBPM)"
+    let body = "{ \n  \(tempo) \n  \(notes) \n}"
+    return [header, body].joined(separator: "\n")
+}
+SWIFT
+
+# Triad helpers (CS_TRIAD=1)
+TRIAD="Sources/HelloCsound/Triad.swift"
+cat > "$TRIAD" <<'SWIFT'
+import Foundation
+
+public func makeTriadCSD(rootHz: Double, duration: Double, quality: String = "major") -> String {
+    let thirds: Double = (quality == "minor") ? pow(2.0, 3.0/12.0) : pow(2.0, 4.0/12.0)
+    let fifth: Double = pow(2.0, 7.0/12.0)
+    let f2 = rootHz * thirds
+    let f3 = rootHz * fifth
+    let instr = """
+    instr 1
+      kenv linseg 0, 0.05, 1, 0.85, 1, 0.10, 0
+      a1 oscili 0.35 * kenv, p4
+      out a1
+    endin
+    """
+    let score = String(format: "i 1 0 %.2f %.2f\ni 1 0 %.2f %.2f\ni 1 0 %.2f %.2f\n", duration, rootHz, duration, f2, duration, f3)
+    let csd = """
+    <CsoundSynthesizer>
+    <CsOptions>
+    -odac
+    </CsOptions>
+    <CsInstruments>
+    %@
+    </CsInstruments>
+    <CsScore>
+    %@
+    e
+    </CsScore>
+    </CsoundSynthesizer>
+    """
+    return String(format: csd, instr, score)
+}
+
+public func makeLilyPondTriad(rootHz: Double, duration: Double, tempoBPM: Int = 120, quality: String = "major") -> String {
+    func midi(for freq: Double) -> Int { guard freq > 0 else { return 60 }; return Int((69.0 + 12.0 * log2(freq / 440.0)).rounded()) }
+    let names = ["c","cis","d","dis","e","f","fis","g","gis","a","ais","b"]
+    func lilyName(for midiNote: Int) -> String {
+        let pc = (midiNote % 12 + 12) % 12
+        let base = names[pc]
+        let d = (midiNote - 60) / 12
+        if d >= 0 { return base + String(repeating: "'", count: d + 1) }
+        else { return base + String(repeating: ",", count: -d - 1) }
+    }
+    // durations
+    let quarter = 60.0 / Double(tempoBPM)
+    let denoms: [Int] = [1,2,4,8,16]
+    struct Cand { let ratio: Double; let label: String }
+    func lilyDurToken(for sec: Double) -> String {
+        let ratio = sec / quarter
+        var best = Cand(ratio: Double.greatestFiniteMagnitude, label: "4")
+        var bestDiff = Double.greatestFiniteMagnitude
+        for d in denoms {
+            let base = 4.0 / Double(d)
+            let plain = Cand(ratio: base, label: String(d))
+            let dotted = Cand(ratio: base * 1.5, label: String(d) + ".")
+            for c in [plain, dotted] {
+                let diff = abs(ratio - c.ratio)
+                if diff < bestDiff { bestDiff = diff; best = c }
+            }
+        }
+        return best.label
+    }
+
+    let thirds: Double = (quality == "minor") ? pow(2.0, 3.0/12.0) : pow(2.0, 4.0/12.0)
+    let fifth: Double = pow(2.0, 7.0/12.0)
+    let chordMidis = [rootHz, rootHz * thirds, rootHz * fifth].map(midi(for:))
+    let chordNames = chordMidis.map(lilyName(for:))
+    let token = lilyDurToken(for: duration)
+    let chord = "<" + chordNames.joined(separator: " ") + ">" + token
+
+    let header = """
+    % Generated by HelloCsound triad export
+    \\version "2.24.0"
+    \\header { title = "Triad" tagline = "FountainAI • Csound • LilyPond" }
+    """
+    let tempo = "\\tempo 4 = \(tempoBPM)"
+    let body = "{ \n  \(tempo) \n  \(chord) \n}"
+    return [header, body].joined(separator: "\n")
+}
+SWIFT
+
+# Duo (two-voice) LilyPond helper (LY_DUO=1 with CS_MOTIF)
+DUO="Sources/HelloCsound/Duo.swift"
+cat > "$DUO" <<'SWIFT'
+import Foundation
+
+public func makeLilyPondDuo(melodyFreqs: [Double], durations: [Double], bassRootHz: Double, tempoBPM: Int = 120) -> String {
+    func midi(for freq: Double) -> Int { guard freq > 0 else { return 60 }; return Int((69.0 + 12.0 * log2(freq / 440.0)).rounded()) }
+    let names = ["c","cis","d","dis","e","f","fis","g","gis","a","ais","b"]
+    func lilyName(for midiNote: Int) -> String {
+        let pc = (midiNote % 12 + 12) % 12
+        let base = names[pc]
+        let d = (midiNote - 60) / 12
+        if d >= 0 { return base + String(repeating: "'", count: d + 1) }
+        else { return base + String(repeating: ",", count: -d - 1) }
+    }
+    // duration tokens with dotted support
+    let quarter = 60.0 / Double(tempoBPM)
+    let denoms: [Int] = [1,2,4,8,16]
+    struct Cand { let ratio: Double; let label: String }
+    func lilyDurToken(for sec: Double) -> String {
+        let ratio = sec / quarter
+        var best = Cand(ratio: Double.greatestFiniteMagnitude, label: "4")
+        var bestDiff = Double.greatestFiniteMagnitude
+        for d in denoms {
+            let base = 4.0 / Double(d)
+            let plain = Cand(ratio: base, label: String(d))
+            let dotted = Cand(ratio: base * 1.5, label: String(d) + ".")
+            for c in [plain, dotted] {
+                let diff = abs(ratio - c.ratio)
+                if diff < bestDiff { bestDiff = diff; best = c }
+            }
+        }
+        return best.label
+    }
+
+    // melody line tokens
+    let melody = zip(melodyFreqs, durations).map { (f, d) -> String in
+        let n = lilyName(for: midi(for: f))
+        let t = lilyDurToken(for: d)
+        return "\(n)\(t)"
+    }.joined(separator: " ")
+
+    // bass: pedal tone for total duration of phrase
+    let total = durations.reduce(0, +)
+    let bassName = lilyName(for: midi(for: bassRootHz))
+    let bassToken = lilyDurToken(for: total)
+    let bass = "\(bassName)\(bassToken)"
+
+    let header = """
+    % Generated by HelloCsound duo export
+    \\version "2.24.0"
+    \\header { title = "Motif + Pedal" tagline = "FountainAI • Csound • LilyPond" }
+    """
+    let tempo = "\\tempo 4 = \(tempoBPM)"
+    // Two voices in one staff
+    let body = "<< \n  { \n    \(tempo) \n    \(melody) \n  } \\ \n  { \n    \(bass) \n  } \n>>"
+    return [header, body].joined(separator: "\n")
 }
 SWIFT
 

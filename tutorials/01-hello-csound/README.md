@@ -6,6 +6,25 @@ Template‑first workflow: `setup.sh` scaffolds a minimal Swift package locally.
 
 > No Binary Assets: only the text-based `hello.csd` file is bundled. Generated audio stays in memory and is not committed.
 
+## Quick Recipes (Copy/Paste)
+
+- Easiest: use the wrapper script in this folder:
+  - `./run.sh tone` — print sample count
+  - `./run.sh hear` — play the tone (macOS)
+  - `./run.sh motif` — 3‑note motif (printed)
+  - `./run.sh motif-hear` — motif and play
+  - `./run.sh motif-score [--tempo 90] [--duo]` — write motif.ly (and motif_duo.ly when --duo)
+  - `./run.sh triad [--quality minor]` — play a triad (major default)
+  - `./run.sh triad-score [--quality minor] [--tempo 72]` — write triad.ly
+
+Cheat Sheet (if you prefer raw env vars):
+- `CS_PLAY=1` — audition the generated samples (macOS `afplay` or writes temp WAV)
+- `CS_MOTIF=1` — use 3‑note motif (edit in `Sources/HelloCsound/Motif.swift`)
+- `CS_TRIAD=1` — play/export a major triad (set `TRIAD_QUALITY=minor` for minor)
+- `LY_EXPORT=1` — write a `.ly` file next to the tutorial (motif.ly / triad.ly / motif_duo.ly)
+- `LY_DUO=1` — add a simple bass pedal under the motif (writes `motif_duo.ly`)
+- `LY_TEMPO=<bpm>` — engraving tempo for LilyPond tokens (default 120)
+
 ## Before You Begin
 - Install the Tutor CLI and add to PATH (see docs/tutor-cli.md and docs/shells-and-git.md):
   - `Scripts/install-tutor.sh`
@@ -143,6 +162,69 @@ Ideas to explore next:
 - Use smaller steps for a calmer contour; larger leaps for tension.
 - Repeat and vary the last note (rhythmic echo) to suggest a cadence.
 - Layer two parts by duplicating `i` lines with small time offsets.
+
+## 8. Classic Score With LilyPond (Optional)
+Prefer traditional notation? Export the motif to a LilyPond `.ly` file and engrave a PDF if you have LilyPond installed.
+
+1) Export the motif to `motif.ly` (offline)
+
+```bash
+CS_MOTIF=1 LY_EXPORT=1 tutor run
+```
+
+2) Engrave with LilyPond (installed separately)
+
+```bash
+lilypond motif.ly   # produces motif.pdf
+```
+
+Notes:
+- Export maps the motif frequencies to nearest equal‑tempered pitches and durations at 120 BPM.
+- You can set the export tempo with `LY_TEMPO`, e.g., `LY_TEMPO=90` for slower note values.
+- The exporter also supports dotted durations when they are the closest fit.
+- You can change the motif arrays in `Sources/HelloCsound/Motif.swift` and re‑export.
+- LilyPond isn’t bundled; install it via your package manager or from lilypond.org.
+
+## 9. Triads As Chords (Optional)
+Explore harmony with simple triads and export them as chord notation.
+
+1) Render a triad and (optionally) export a LilyPond chord
+
+```bash
+CS_TRIAD=1 TRIAD_QUALITY=minor tutor run
+CS_TRIAD=1 TRIAD_QUALITY=major LY_EXPORT=1 LY_TEMPO=72 tutor run  # writes triad.ly
+```
+
+2) Engrave with LilyPond (installed separately)
+
+```bash
+lilypond triad.ly
+```
+
+Notes:
+- Root defaults to C4 (261.63 Hz), held for 1 second.
+- `TRIAD_QUALITY` accepts `major` (default) or `minor`.
+- Export maps to the nearest equal‑tempered pitches and duration tokens (supports dotted).
+
+## 10. Two‑Voice Accompaniment (Optional)
+Add a simple bass accompaniment (pedal tone) beneath your motif and engrave both voices.
+
+1) Export the duo score (melody + bass)
+
+```bash
+CS_MOTIF=1 LY_EXPORT=1 LY_DUO=1 tutor run   # writes motif_duo.ly
+```
+
+2) Engrave with LilyPond
+
+```bash
+lilypond motif_duo.ly
+```
+
+Notes:
+- The duo uses a pedal note one octave (or more) below the motif’s first pitch.
+- This keeps the harmony grounded while you explore melodic contour — a classic sketching technique.
+- Customize the bass root by editing the code path (search for `bassRoot` in the generated `main.swift`) or extend the helper to follow chord roots.
 
 ## From Sine To Soundscape (Mental Model)
 ```
