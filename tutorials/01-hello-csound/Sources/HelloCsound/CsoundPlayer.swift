@@ -21,12 +21,17 @@ public struct CsoundPlayer {
         public let samples: [Float]
     }
 
+    // Play the bundled hello.csd
     public func play() throws -> Result {
         guard let url = Bundle.module.url(forResource: "hello", withExtension: "csd") else {
             throw CsoundError.resourceNotFound
         }
         guard let csd = try? String(contentsOf: url) else { throw CsoundError.loadFailed }
+        return try play(csd: csd)
+    }
 
+    // Play from an inline CSD string (exercise/demo path)
+    public func play(csd: String) throws -> Result {
         var amp: Double = 0.2, freq: Double = 440.0, duration: Double = 1.0
         let sampleRate = 44_100
         if let oscLine = csd.components(separatedBy: .newlines).first(where: { $0.contains("oscili") }) {
@@ -35,10 +40,15 @@ public struct CsoundPlayer {
                 .compactMap { Double($0) }
             if numbers.count >= 2 { amp = numbers[0]; freq = numbers[1] }
         }
-        if let scoreLine = csd.components(separatedBy: .newlines).first(where: { $0.trimmingCharacters(in: .whitespaces).hasPrefix("i ") }) {
-            let parts = scoreLine.split(whereSeparator: { $0.isWhitespace })
-            if parts.count >= 4, let dur = Double(parts[3]) { duration = max(0, dur) }
+        // If there are multiple score events, use total end time as approx duration
+        var endTime: Double = 0
+        for line in csd.components(separatedBy: .newlines) where line.trimmingCharacters(in: .whitespaces).hasPrefix("i ") {
+            let parts = line.split(whereSeparator: { $0.isWhitespace })
+            if parts.count >= 4, let start = Double(parts[1]), let dur = Double(parts[3]) {
+                endTime = max(endTime, start + dur)
+            }
         }
+        duration = max(duration, endTime)
         let total = Int((duration * Double(sampleRate)).rounded())
         var samples = [Float]()
         samples.reserveCapacity(total)
