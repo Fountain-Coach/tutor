@@ -51,6 +51,14 @@ CS_PLAY=1 tutor run             # also plays the tone
 
 Expected: The console prints the generated sample count. With `CS_PLAY=1`, you hear the short tone rendered from the generated samples. On macOS, playback uses `afplay`; if sound output isn’t available, a WAV file is written to your temp folder (and `afplay` may print an error).
 
+### About `afplay` (macOS)
+- `afplay` is Apple’s command‑line audio player at `/usr/bin/afplay`.
+- Used here to audition a temporary WAV rendered from the generated samples.
+- Basic usage examples:
+  - `afplay file.wav`
+  - `afplay -v 0.8 file.wav` (set volume 0.0–1.0)
+- If `afplay` isn’t available or audio output is restricted (CI, headless), the tutorial prints the temp WAV path so you can play it with another tool.
+
 ## 4. Tell A Story With Sound
 Music is shaped intent. Start from the included `hello.csd` and try tiny, meaningful changes:
 
