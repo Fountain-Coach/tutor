@@ -156,6 +156,42 @@ final class CsoundPlayerTests: XCTestCase {
 SWIFT
 fi
 
+# Additional deterministic tests for duration mapping and LilyPond export behavior
+LILY_TEST="$TEST_DIR/LilyPondMappingTests.swift"
+if [[ ! -f "$LILY_TEST" ]]; then
+  cat > "$LILY_TEST" <<'SWIFT'
+import XCTest
+@testable import HelloCsound
+
+final class LilyPondMappingTests: XCTestCase {
+    func testDurationTokensChangeWithTempo() {
+        // Use exported helpers from setup (makeLilyPond) if present
+        let freqs: [Double] = [440]
+        let durs:  [Double] = [0.5]
+        let ly60 = makeLilyPond(frequencies: freqs, durations: durs, tempoBPM: 60)
+        let ly120 = makeLilyPond(frequencies: freqs, durations: durs, tempoBPM: 120)
+        XCTAssertTrue(ly60.contains(" 8 ") || ly60.contains("8\n") || ly60.contains("8}"))
+        XCTAssertTrue(ly120.contains(" 4 ") || ly120.contains("4\n") || ly120.contains("4}"))
+    }
+}
+SWIFT
+fi
+
+NEG_TEST="$TEST_DIR/SystemNegativeTests.swift"
+if [[ ! -f "$NEG_TEST" ]]; then
+  cat > "$NEG_TEST" <<'SWIFT'
+import XCTest
+@testable import HelloCsound
+
+final class SystemNegativeTests: XCTestCase {
+    func testGatewayHealthInvalidURLReturnsFalse() async throws {
+        let ok = await SystemCheck.gatewayHealthy(urlString: "http://127.0.0.1:65535/api/v1")
+        XCTAssertFalse(ok)
+    }
+}
+SWIFT
+fi
+
 # Motif helper for the exercise mode (CS_MOTIF=1)
 MOTIF="Sources/HelloCsound/Motif.swift"
 if [[ ! -f "$MOTIF" ]]; then

@@ -215,7 +215,9 @@ Notes:
 - You can set the export tempo with `LY_TEMPO`, e.g., `LY_TEMPO=90` for slower note values.
 - The exporter also supports dotted durations when they are the closest fit.
 - You can change the motif arrays in `Sources/HelloCsound/Motif.swift` and re‑export.
-- LilyPond isn’t bundled; install it via your package manager or from lilypond.org.
+- LilyPond isn’t bundled; install it via your package manager or from lilypond.org. If it’s missing, exports still write copy‑ready `.ly` files you can engrave later.
+
+Tip: Run `./run.sh status` anytime to check tool availability and next steps.
 
 ## 9. Triads As Chords (Optional)
 Explore harmony with simple triads and export them as chord notation.
