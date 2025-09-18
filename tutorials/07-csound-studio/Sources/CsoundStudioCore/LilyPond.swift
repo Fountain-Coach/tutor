@@ -1,7 +1,7 @@
 import Foundation
 
-enum LilyPondExporter {
-    static func makeLily(from csd: String, tempoBPM: Int) -> String {
+public enum LilyPondExporter {
+    public static func makeLily(from csd: String, tempoBPM: Int) -> String {
         // naive: assume a single voice; map i-lines to equal-tempered notes by heuristic (not exact)
         func midi(for freq: Double) -> Int { guard freq > 0 else { return 60 }; return Int((69.0 + 12.0 * log2(freq / 440.0)).rounded()) }
         let names = ["c","cis","d","dis","e","f","fis","g","gis","a","ais","b"]
@@ -53,11 +53,10 @@ enum LilyPondExporter {
         return [header, body].joined(separator: "\n")
     }
 
-    static func engrave(lyURL: URL) -> Bool {
+    public static func engrave(lyURL: URL) -> Bool {
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         task.arguments = ["lilypond", lyURL.path]
         do { try task.run(); task.waitUntilExit(); return (task.terminationStatus == 0) } catch { return false }
     }
 }
-

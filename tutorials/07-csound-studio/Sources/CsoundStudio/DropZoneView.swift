@@ -1,4 +1,5 @@
 import SwiftUI
+import CsoundStudioCore
 #if canImport(AppKit)
 import AppKit
 #endif

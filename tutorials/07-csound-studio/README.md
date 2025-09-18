@@ -42,9 +42,10 @@ Inside the app, type a prompt (e.g., “Write a Csound .csd with a gentle envelo
 - `Sources/CsoundStudio/MainSplitView.swift` — two‑pane layout (chat + drop).
 - `Sources/CsoundStudio/ChatView.swift` — simple Gateway chat client (local Gateway).
 - `Sources/CsoundStudio/DropZoneView.swift` — drag/drop `.csd`, play/export.
-- `Sources/CsoundStudio/CsoundPlayer.swift` — minimal simulator for `.csd` → samples.
 - `Sources/CsoundStudio/Playback.swift` — writes WAV + tries `afplay`.
-- `Sources/CsoundStudio/LilyPond.swift` — export `.ly` and try engraving via `lilypond`.
+- `Sources/CsoundStudioCore/CsoundPlayer.swift` — minimal simulator for `.csd` → samples.
+- `Sources/CsoundStudioCore/LilyPond.swift` — export `.ly` and try engraving via `lilypond`.
+- `Sources/CsoundStudioCore/SystemCheck.swift` — gateway health, lilypond presence, and helpers.
  - `Sources/CsoundStudio/ToolsmithIntegration.swift` — optional QEMU path using Toolsmith runners.
 
 ## Toolsmith Option (No Local LilyPond/Csound)
@@ -66,3 +67,5 @@ Details and manual steps are in TOOLSMITH.md.
 ```
 
 Runs a minimal unit test that verifies `CsoundPlayer` can synthesize samples from a tiny in‑memory `.csd`.
+
+Additional tests cover LilyPond export structure, settings defaults, and gateway health negative paths. In CI, the suite runs via `tutor test`.

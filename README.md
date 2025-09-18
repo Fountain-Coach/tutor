@@ -3,6 +3,7 @@
 Template-first workflow: `setup.sh` scaffolds a minimal Swift package from the FountainAI monorepo; build and run locally using the Swift-powered `tutor-cli` (no Xcode required).
 
 [![Swift Tutorials CI](https://github.com/Fountain-Coach/tutor/actions/workflows/swift-ci.yml/badge.svg)](https://github.com/Fountain-Coach/tutor/actions/workflows/swift-ci.yml)
+[![codecov](https://codecov.io/gh/Fountain-Coach/tutor/branch/main/graph/badge.svg)](https://codecov.io/gh/Fountain-Coach/tutor)
 
 This repository hosts the tutorial content for FountainAI. Each lesson scaffolds a minimal Swift Package app via `setup.sh`, which wraps scripts from the upstream [FountainAI monorepo](https://github.com/Fountain-Coach/the-fountainai). Tutorials focus on learning the workflow and core concepts, not running the full platform services.
 

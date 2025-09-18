@@ -24,7 +24,10 @@ public struct CsoundPlayer {
         var endTime: Double = 0
         for line in csd.components(separatedBy: .newlines) where line.trimmingCharacters(in: .whitespaces).hasPrefix("i ") {
             let parts = line.split(whereSeparator: { $0.isWhitespace })
-            if parts.count >= 4, let start = Double(parts[1]), let dur = Double(parts[3]) { endTime = max(endTime, start + dur) }
+            // Csound i-line: i <instr> <start> <dur> [...]
+            if parts.count >= 4, let start = Double(parts[2]), let dur = Double(parts[3]) {
+                endTime = max(endTime, start + dur)
+            }
         }
         duration = max(duration, endTime)
         let total = Int((duration * Double(sampleRate)).rounded())
@@ -35,4 +38,3 @@ public struct CsoundPlayer {
         return Result(sampleRate: sampleRate, durationSeconds: duration, samples: samples)
     }
 }
-

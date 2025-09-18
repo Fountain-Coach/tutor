@@ -19,6 +19,7 @@ jobs:
           - 04-multimedia-midi2
           - 05-ai-integration-openapi
           - 06-screenplay-editor-capstone
+          - 07-csound-studio
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -49,3 +50,34 @@ jobs:
 
       - name: Test
         run: tools/tutor-cli/.build/release/tutor test --dir tutorials/${{ matrix.tutorial }}
+
+      - name: Generate Coverage (SwiftPM)
+        working-directory: tutorials/${{ matrix.tutorial }}
+        run: |
+          set -euo pipefail
+          swift test --enable-code-coverage
+          BIN=$(ls .build/*/debug/*PackageTests.xctest/Contents/MacOS/* 2>/dev/null | head -n1)
+          PROFDATA=$(ls .build/*/debug/codecov/*.profdata 2>/dev/null | head -n1)
+          if [[ -n "${BIN:-}" && -n "${PROFDATA:-}" ]]; then
+            xcrun llvm-cov report "$BIN" -instr-profile "$PROFDATA" > coverage.txt || true
+            xcrun llvm-cov export -format=lcov "$BIN" -instr-profile "$PROFDATA" > coverage.lcov || true
+          else
+            echo "No coverage artifacts found (skipping export)" > coverage.txt
+          fi
+
+      - name: Upload Coverage Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.tutorial }}
+          path: |
+            tutorials/${{ matrix.tutorial }}/coverage.txt
+            tutorials/${{ matrix.tutorial }}/coverage.lcov
+
+      - name: Upload to Codecov
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          files: tutorials/${{ matrix.tutorial }}/coverage.lcov
+          flags: ${{ matrix.tutorial }}
+          fail_ci_if_error: false

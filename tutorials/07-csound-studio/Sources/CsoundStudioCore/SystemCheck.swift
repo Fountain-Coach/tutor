@@ -1,7 +1,7 @@
 import Foundation
 
-enum SystemCheck {
-    static func lilypondInstalled() -> Bool {
+public enum SystemCheck {
+    public static func lilypondInstalled() -> Bool {
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         task.arguments = ["lilypond", "--version"]
@@ -9,7 +9,7 @@ enum SystemCheck {
         do { try task.run(); task.waitUntilExit(); return task.terminationStatus == 0 } catch { return false }
     }
 
-    static func gatewayHealthy(urlString: String) async -> Bool {
+    public static func gatewayHealthy(urlString: String) async -> Bool {
         var base = urlString
         if base.hasSuffix("/") { base.removeLast() }
         guard let url = URL(string: base.replacingOccurrences(of: "/api/v1", with: "") + "/health") else { return false }
@@ -20,7 +20,7 @@ enum SystemCheck {
         } catch { return false }
     }
 
-    static func startGateway(openAIKey: String, urlString: String) -> (Bool, String) {
+    public static func startGateway(openAIKey: String, urlString: String) -> (Bool, String) {
         // Try to locate Scripts/run-gateway-source.sh by walking up to 3 levels
         let fm = FileManager.default
         let cwd = URL(fileURLWithPath: fm.currentDirectoryPath)
@@ -48,7 +48,7 @@ enum SystemCheck {
         return (ok, ok ? "Gateway start attempted. Check status/health." : "Gateway exited with code \(task.terminationStatus). See logs.\n\(out)")
     }
 
-    static func openGatewayLogs() -> Bool {
+    public static func openGatewayLogs() -> Bool {
         // Try to open .tutor/gateway.log from repo root by walking up
         let fm = FileManager.default
         var dir = URL(fileURLWithPath: fm.currentDirectoryPath)
@@ -63,7 +63,7 @@ enum SystemCheck {
         return false
     }
 
-    static func stopGateway() -> Bool {
+    public static func stopGateway() -> Bool {
         // Look for .tutor/gateway.pid and kill it gracefully
         let fm = FileManager.default
         var dir = URL(fileURLWithPath: fm.currentDirectoryPath)

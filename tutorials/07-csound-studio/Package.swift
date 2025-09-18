@@ -4,21 +4,23 @@ import PackageDescription
 let package = Package(
     name: "CsoundStudio",
     platforms: [ .macOS(.v14) ],
-    products: [ .executable(name: "CsoundStudio", targets: ["CsoundStudio"]) ],
-    dependencies: [
-        .package(url: "https://github.com/Fountain-Coach/toolsmith.git", branch: "main")
+    products: [
+        .library(name: "CsoundStudioCore", targets: ["CsoundStudioCore"]),
+        .executable(name: "CsoundStudio", targets: ["CsoundStudio"])
     ],
     targets: [
+        .target(
+            name: "CsoundStudioCore",
+            path: "Sources/CsoundStudioCore"
+        ),
         .executableTarget(
             name: "CsoundStudio",
-            dependencies: [
-                .product(name: "SandboxRunner", package: "toolsmith")
-            ],
+            dependencies: ["CsoundStudioCore"],
             path: "Sources/CsoundStudio"
         ),
         .testTarget(
             name: "CsoundStudioTests",
-            dependencies: ["CsoundStudio"],
+            dependencies: ["CsoundStudioCore"],
             path: "Tests/CsoundStudioTests"
         )
     ]

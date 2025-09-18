@@ -1,4 +1,5 @@
 import SwiftUI
+import CsoundStudioCore
 
 struct SettingsView: View {
     @EnvironmentObject var settings: AppSettings

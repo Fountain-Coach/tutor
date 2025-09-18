@@ -1,11 +1,11 @@
 import Foundation
-#if canImport(SandboxRunner)
+#if canImport(SandboxRunner) && TOOLSMITH_ENABLED
 import SandboxRunner
 #endif
 
 enum ToolsmithIntegration {
     static func isAvailable() -> Bool {
-        #if canImport(SandboxRunner)
+        #if canImport(SandboxRunner) && TOOLSMITH_ENABLED
         return true
         #else
         return false
@@ -13,7 +13,7 @@ enum ToolsmithIntegration {
     }
 
     static func engraveLily(lyURL: URL, imagePath: String, timeout: TimeInterval = 90) -> (ok: Bool, note: String) {
-        #if canImport(SandboxRunner)
+        #if canImport(SandboxRunner) && TOOLSMITH_ENABLED
         let runner = QemuRunner(image: URL(fileURLWithPath: imagePath))
         let work = lyURL.deletingLastPathComponent()
         do {
@@ -38,7 +38,7 @@ enum ToolsmithIntegration {
     }
 
     static func synthesizeCsdToWav(csdText: String, imagePath: String, timeout: TimeInterval = 90) -> (ok: Bool, wavURL: URL?, note: String) {
-        #if canImport(SandboxRunner)
+        #if canImport(SandboxRunner) && TOOLSMITH_ENABLED
         let runner = QemuRunner(image: URL(fileURLWithPath: imagePath))
         let work = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("csound_vm_\(UUID().uuidString)")
         do {
@@ -67,7 +67,7 @@ enum ToolsmithIntegration {
     }
 
     static func verifyLilypond(imagePath: String, timeout: TimeInterval = 30) -> (ok: Bool, output: String) {
-        #if canImport(SandboxRunner)
+        #if canImport(SandboxRunner) && TOOLSMITH_ENABLED
         let runner = QemuRunner(image: URL(fileURLWithPath: imagePath))
         let work = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("verify_vm_\(UUID().uuidString)")
         do {
@@ -90,7 +90,7 @@ enum ToolsmithIntegration {
     }
 
     static func verifyCsound(imagePath: String, timeout: TimeInterval = 30) -> (ok: Bool, output: String) {
-        #if canImport(SandboxRunner)
+        #if canImport(SandboxRunner) && TOOLSMITH_ENABLED
         let runner = QemuRunner(image: URL(fileURLWithPath: imagePath))
         let work = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("verify_vm_\(UUID().uuidString)")
         do {

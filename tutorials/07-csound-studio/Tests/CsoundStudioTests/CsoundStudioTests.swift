@@ -1,5 +1,5 @@
 import XCTest
-@testable import CsoundStudio
+@testable import CsoundStudioCore
 
 final class CsoundStudioTests: XCTestCase {
     func testSynthesizesSamplesFromMinimalCSD() throws {
@@ -21,4 +21,3 @@ final class CsoundStudioTests: XCTestCase {
         XCTAssertGreaterThan(result.samples.count, 1000)
     }
 }
-
