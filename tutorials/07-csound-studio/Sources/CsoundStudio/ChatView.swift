@@ -1,0 +1,81 @@
+import SwiftUI
+
+struct ChatMessageItem: Identifiable {
+    let id = UUID()
+    let role: String
+    let content: String
+}
+
+struct ChatView: View {
+    @State private var prompt: String = "Return a complete Csound .csd with a gentle envelope and a 3-note motif at 120 BPM. Output only .csd."
+    @State private var isLoading = false
+    @State private var error: String?
+    @State private var messages: [ChatMessageItem] = []
+
+    let onInsert: (String) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Chat • Csound Ideas").font(.title2).padding(.bottom, 4)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(messages) { m in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(m.role.capitalized).font(.caption).foregroundStyle(.secondary)
+                            Text(m.content).font(.body).textSelection(.enabled)
+                        }
+                        .padding(8)
+                        .background(Color.gray.opacity(0.12))
+                        .cornerRadius(6)
+                    }
+                }.frame(maxWidth: .infinity, alignment: .leading)
+            }
+            HStack {
+                TextField("Your prompt", text: $prompt, axis: .vertical)
+                    .textFieldStyle(.roundedBorder)
+                Button(isLoading ? "Asking…" : "Ask") {
+                    Task { await ask() }
+                }.disabled(isLoading || prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                Button("Insert As .csd") {
+                    if let last = messages.last?.content { onInsert(last) }
+                }.disabled(messages.isEmpty)
+            }
+            if let error { Text(error).foregroundStyle(.red) }
+        }
+        .padding()
+    }
+
+    func ask() async {
+        isLoading = true; defer { isLoading = false }
+        messages.append(.init(role: "user", content: prompt))
+        do {
+            let base = ProcessInfo.processInfo.environment["LLM_GATEWAY_URL"] ?? "http://127.0.0.1:8080/api/v1"
+            guard let url = URL(string: base + "/generate") else { error = "Invalid LLM_GATEWAY_URL"; return }
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            if let token = ProcessInfo.processInfo.environment["FOUNTAIN_AI_KEY"], !token.isEmpty {
+                req.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            }
+            req.addValue("application/json", forHTTPHeaderField: "Content-Type")
+            let body: [String: Any] = [
+                "model": "fountain-medium",
+                "messages": [["role": "user", "content": prompt]]
+            ]
+            req.httpBody = try JSONSerialization.data(withJSONObject: body)
+            let (data, resp) = try await URLSession.shared.data(for: req)
+            guard (resp as? HTTPURLResponse)?.statusCode ?? 500 < 300 else {
+                error = String(data: data, encoding: .utf8) ?? "Gateway error"; return
+            }
+            let text = String(data: data, encoding: .utf8) ?? ""
+            // Try a couple common shapes
+            let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            let content = (parsed? ["content"] as? String)
+                ?? ((((parsed? ["choices"] as? [[String: Any]])?.first? ["message"]) as? [String: Any])? ["content"] as? String)
+                ?? text
+            messages.append(.init(role: "assistant", content: content))
+            error = nil
+        } catch {
+            self.error = String(describing: error)
+        }
+    }
+}
