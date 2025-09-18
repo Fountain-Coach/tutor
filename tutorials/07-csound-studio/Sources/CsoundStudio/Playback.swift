@@ -11,6 +11,15 @@ public func play(samples: [Float], sampleRate: Int, seconds: Double) throws {
     }
 }
 
+public func playFile(url: URL) {
+    let task = Process()
+    task.executableURL = URL(fileURLWithPath: "/usr/bin/afplay")
+    task.arguments = [url.path]
+    do { try task.run(); task.waitUntilExit() } catch {
+        print("Saved WAV to: \(url.path) (audio playback not available)")
+    }
+}
+
 private func writeWAV(samples: [Float], sampleRate: Int, url: URL) throws {
     let numChannels: UInt16 = 1
     let bitsPerSample: UInt16 = 16
@@ -32,4 +41,3 @@ private func writeWAV(samples: [Float], sampleRate: Int, url: URL) throws {
     append("data"); append32(UInt32(pcm.count)); data.append(pcm)
     try data.write(to: url)
 }
-

@@ -4,6 +4,7 @@ import AppKit
 #endif
 
 struct DropZoneView: View {
+    @EnvironmentObject var settings: AppSettings
     @Binding var csdText: String
     @Binding var status: String
     @Binding var lilyOK: Bool
@@ -79,6 +80,14 @@ struct DropZoneView: View {
     }
 
     private func playCSD() {
+        // Prefer Toolsmith VM if configured
+        if settings.useToolsmithVM, !settings.toolImagePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, ToolsmithIntegration.isAvailable() {
+            let (ok, wav, note) = ToolsmithIntegration.synthesizeCsdToWav(csdText: csdText, imagePath: settings.toolImagePath)
+            if ok, let wav { playFile(url: wav); status = note }
+            else { status = note }
+            return
+        }
+        // Fallback to simulator
         do {
             let result = try CsoundPlayer().play(csd: csdText)
             try play(samples: result.samples, sampleRate: result.sampleRate, seconds: result.durationSeconds)
@@ -98,8 +107,19 @@ struct DropZoneView: View {
     private func engravePDF() {
         let lyURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("composition.ly")
         guard FileManager.default.fileExists(atPath: lyURL.path) else { status = "No composition.ly — export first"; return }
-        let ok = LilyPondExporter.engrave(lyURL: lyURL)
-        status = ok ? "Engraved PDF via lilypond" : "lilypond not available — used .ly only"
+        if lilyOK {
+            let ok = LilyPondExporter.engrave(lyURL: lyURL)
+            status = ok ? "Engraved PDF via lilypond" : "Engrave failed — see console/logs"
+            return
+        }
+        // Try Toolsmith VM if configured
+        if settings.useToolsmithVM, !settings.toolImagePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, ToolsmithIntegration.isAvailable() {
+            let (ok, note) = ToolsmithIntegration.engraveLily(lyURL: lyURL, imagePath: settings.toolImagePath)
+            status = note
+            if !ok { status += " — falling back to .ly only" }
+        } else {
+            status = "lilypond not available — used .ly only"
+        }
     }
 
     private func copy(_ text: String) {

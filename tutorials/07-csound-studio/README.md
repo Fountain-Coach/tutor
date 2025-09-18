@@ -45,6 +45,19 @@ Inside the app, type a prompt (e.g., “Write a Csound .csd with a gentle envelo
 - `Sources/CsoundStudio/CsoundPlayer.swift` — minimal simulator for `.csd` → samples.
 - `Sources/CsoundStudio/Playback.swift` — writes WAV + tries `afplay`.
 - `Sources/CsoundStudio/LilyPond.swift` — export `.ly` and try engraving via `lilypond`.
+ - `Sources/CsoundStudio/ToolsmithIntegration.swift` — optional QEMU path using Toolsmith runners.
+
+## Toolsmith Option (No Local LilyPond/Csound)
+
+This app can run LilyPond engraving and Csound synthesis inside a Toolsmith-provisioned VM image so you don’t need to install those tools on your host.
+
+- Open Settings → enable “Use Toolsmith VM…” and set the path to a Linux image (`.qcow2/.img`) that includes `lilypond` and `csound`.
+- When LilyPond is missing locally, the app will attempt to engrave via the VM. Likewise, the Play button can synthesize audio via the VM when enabled.
+- If the VM path isn’t available, the app falls back to copy‑ready `.ly` and a built‑in Csound simulator.
+
+Click “Prepare Toolsmith VM…” in Settings to build a ready image automatically (downloads Ubuntu cloud image and provisions LilyPond/Csound). The script runs locally and prints the final image path; the app fills it in for you.
+
+Details and manual steps are in TOOLSMITH.md.
 
 ## Test
 
@@ -53,4 +66,3 @@ Inside the app, type a prompt (e.g., “Write a Csound .csd with a gentle envelo
 ```
 
 Runs a minimal unit test that verifies `CsoundPlayer` can synthesize samples from a tiny in‑memory `.csd`.
-
