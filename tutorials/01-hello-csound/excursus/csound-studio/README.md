@@ -1,4 +1,8 @@
-# 07 – Csound Studio (Chat + Drop)
+# Excursus — Csound Studio (Chat + Drop)
+
+[← Back to 01 – Hello Csound](../../README.md)
+
+This is an advanced excursus from “01 – Hello Csound”. It showcases a future, richer app experience built on concepts introduced throughout the series. Treat it as a preview and playground rather than a required step in the main progression.
 
 A small macOS SwiftUI app that combines two panes:
 - Left: Chat with an LLM about Csound (ask for instruments/scores); paste or insert generated `.csd`.
@@ -9,10 +13,14 @@ Everything runs locally. The only remote hop is the Gateway’s outbound HTTPS c
 ## Run Locally (SwiftUI App)
 
 ```bash
-cd tutorials/07-csound-studio
+cd tutorials/01-hello-csound/excursus/csound-studio
 ./run.sh open     # macOS: opens the SwiftPM project in Xcode
 # or
 ./run.sh build && ./run.sh run
+
+# Or, using SwiftPM directly
+# swift build --product HelloCsoundStudio
+# swift run HelloCsoundStudio
 ```
 
 - Playback uses `afplay` (macOS) from a temporary WAV file. If audio isn’t available, the WAV path is printed.
@@ -28,7 +36,7 @@ export OPENAI_API_KEY="sk-..."
 Scripts/run-gateway-source.sh start --dev --no-auth
 
 # Then in another terminal
-cd tutorials/07-csound-studio
+cd tutorials/01-hello-csound/excursus/csound-studio
 export LLM_GATEWAY_URL=http://127.0.0.1:8080/api/v1
 export FOUNTAIN_AI_KEY=local-dev-key
 ./run.sh run

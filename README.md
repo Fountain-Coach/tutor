@@ -96,6 +96,7 @@ Tip: To reset tutorials to a clean starter state (removing caches and generated 
 ## Tutorials
 
 - [01 – Hello Csound](tutorials/01-hello-csound/README.md)
+  - Excursus: [Csound Studio (Chat + Drop)](tutorials/01-hello-csound/excursus/csound-studio/README.md) — an advanced preview app that builds on concepts introduced throughout the series.
 - [02 – Hello FountainAI](tutorials/01-hello-fountainai/README.md)
 - [03 – Basic UI with Teatro](tutorials/02-basic-ui-teatro/README.md)
 - [04 – Data Persistence with FountainStore](tutorials/03-data-persistence-fountainstore/README.md)

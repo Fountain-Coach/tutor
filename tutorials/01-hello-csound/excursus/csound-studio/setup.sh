@@ -5,5 +5,4 @@ set -euo pipefail
 # SwiftPM package with sources and tests. We keep this script to match the
 # repository convention and CI workflow steps.
 
-echo "[07-csound-studio] setup: nothing to scaffold (package is committed)."
-
+echo "[excursus/csound-studio] setup: nothing to scaffold (package is committed)."

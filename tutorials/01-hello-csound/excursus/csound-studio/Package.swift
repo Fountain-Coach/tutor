@@ -6,7 +6,7 @@ let package = Package(
     platforms: [ .macOS(.v14) ],
     products: [
         .library(name: "CsoundStudioCore", targets: ["CsoundStudioCore"]),
-        .executable(name: "CsoundStudio", targets: ["CsoundStudio"])
+        .executable(name: "HelloCsoundStudio", targets: ["CsoundStudio"])
     ],
     targets: [
         .target(

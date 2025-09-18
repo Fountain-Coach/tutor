@@ -275,3 +275,15 @@ Continue to [02 – Hello FountainAI](../01-hello-fountainai/README.md) to explo
 
 ## See Also
 - [Dependency Management Deep Dive](../../docs/dependency-management-deep-dive.md)
+
+## Excursus: Csound Studio (Advanced Preview)
+If you want to see where this lesson is heading, try the Csound Studio excursus — a richer SwiftUI app with chat, drop‑zone, LilyPond export, and optional Toolsmith integration.
+
+- Path: `./excursus/csound-studio/`
+- Build: `cd tutorials/01-hello-csound/excursus/csound-studio && ./run.sh build`
+- Run: `./run.sh run`
+- Tests: `./run.sh test`
+
+Notes
+- It’s intentionally outside the mainline CI to avoid mixing advanced dependencies into beginner steps.
+- The embedded provisioning script can prepare a Linux VM image (opt‑in) for LilyPond/Csound inside a Toolsmith sandbox.

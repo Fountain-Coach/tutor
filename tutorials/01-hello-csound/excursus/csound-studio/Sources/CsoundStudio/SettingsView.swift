@@ -212,8 +212,14 @@ struct SettingsView: View {
         let fm = FileManager.default
         let cwd = URL(fileURLWithPath: fm.currentDirectoryPath)
         let candidates = [
-            cwd.appendingPathComponent("tutorials/07-csound-studio/Scripts/prepare-toolsmith-vm.sh").path,
+            // New excursus location (current directory)
             cwd.appendingPathComponent("Scripts/prepare-toolsmith-vm.sh").path,
+            // New excursus absolute path from repo root
+            cwd.appendingPathComponent("tutorials/01-hello-csound/excursus/csound-studio/Scripts/prepare-toolsmith-vm.sh").standardized.path,
+            cwd.appendingPathComponent("../tutorials/01-hello-csound/excursus/csound-studio/Scripts/prepare-toolsmith-vm.sh").standardized.path,
+            cwd.appendingPathComponent("../../tutorials/01-hello-csound/excursus/csound-studio/Scripts/prepare-toolsmith-vm.sh").standardized.path,
+            // Legacy path (pre-move)
+            cwd.appendingPathComponent("tutorials/07-csound-studio/Scripts/prepare-toolsmith-vm.sh").path,
             cwd.appendingPathComponent("../tutorials/07-csound-studio/Scripts/prepare-toolsmith-vm.sh").standardized.path,
             cwd.appendingPathComponent("../../tutorials/07-csound-studio/Scripts/prepare-toolsmith-vm.sh").standardized.path
         ]
