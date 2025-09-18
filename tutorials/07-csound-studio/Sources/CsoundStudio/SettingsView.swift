@@ -18,7 +18,9 @@ struct SettingsView: View {
                 Section("Gateway") {
                     TextField("Gateway URL", text: $settings.gatewayURL)
                         .disableAutocorrection(true)
+                        .textFieldStyle(.roundedBorder)
                     SecureField("Gateway Token (FOUNTAIN_AI_KEY)", text: $settings.apiToken)
+                        .textFieldStyle(.roundedBorder)
                     HStack(spacing: 12) {
                         Button(checking ? "Checking…" : "Check") { Task { await checkNow() } }
                             .disabled(checking)
@@ -51,6 +53,7 @@ struct SettingsView: View {
                 }
                 Section("Provider (OpenAI)") {
                     SecureField("OPENAI_API_KEY (used by local Gateway)", text: $settings.openAIKey)
+                        .textFieldStyle(.roundedBorder)
                     Text("Note: The Gateway reads this key from its own process environment. Update your shell and restart the Gateway to apply.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
@@ -64,8 +67,9 @@ struct SettingsView: View {
                         .font(.footnote).foregroundStyle(.secondary)
                 }
             }
-            if let note { Text(note).foregroundStyle(.secondary) }
-            HStack { Spacer(); Button("Close") { /* dismissed by parent */ } }
+            .formStyle(.grouped)
+            if let note { Text(note).font(.footnote).foregroundStyle(.secondary) }
+            HStack { Spacer(); Button("Close") { dismiss() } }
         }
         .padding()
         .task { await checkNow() }
