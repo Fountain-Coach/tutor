@@ -5,6 +5,7 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ "**" ]
+  workflow_dispatch:
 
 jobs:
   build-and-test:
@@ -56,11 +57,13 @@ jobs:
         run: |
           set -euo pipefail
           swift test --enable-code-coverage
-          BIN=$(ls .build/*/debug/*PackageTests.xctest/Contents/MacOS/* 2>/dev/null | head -n1)
-          PROFDATA=$(ls .build/*/debug/codecov/*.profdata 2>/dev/null | head -n1)
+          echo "Listing build tree for coverage discovery:" && find .build -maxdepth 4 -type f | sed -n '1,200p'
+          BIN=$(ls .build/*/debug/*PackageTests.xctest/Contents/MacOS/* 2>/dev/null | head -n1 || true)
+          PROFDATA=$(ls .build/*/debug/codecov/*.profdata 2>/dev/null | head -n1 || true)
           if [[ -n "${BIN:-}" && -n "${PROFDATA:-}" ]]; then
             xcrun llvm-cov report "$BIN" -instr-profile "$PROFDATA" > coverage.txt || true
             xcrun llvm-cov export -format=lcov "$BIN" -instr-profile "$PROFDATA" > coverage.lcov || true
+            echo "Generated coverage from BIN=$BIN PROFDATA=$PROFDATA"
           else
             echo "No coverage artifacts found (skipping export)" > coverage.txt
           fi
@@ -81,3 +84,36 @@ jobs:
           files: tutorials/${{ matrix.tutorial }}/coverage.lcov
           flags: ${{ matrix.tutorial }}
           fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+
+  merge-coverage:
+    needs: build-and-test
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Coverage Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          merge-multiple: true
+          path: coverage
+
+      - name: Merge LCOV
+        run: |
+          set -euo pipefail
+          mkdir -p coverage
+          ls -la coverage || true
+          # Concatenate all lcov files into one; lcov supports simple concatenation
+          find coverage -name '*.lcov' -maxdepth 2 -print -exec cat {} \; > coverage/merged.lcov || true
+          echo "Merged LCOV size:" && wc -c coverage/merged.lcov || true
+
+      - name: Upload Merged Coverage to Codecov (project-level)
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage/merged.lcov
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
