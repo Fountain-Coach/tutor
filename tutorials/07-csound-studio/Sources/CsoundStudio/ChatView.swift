@@ -31,9 +31,26 @@ struct ChatView: View {
                     }
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }
-            HStack {
-                TextField("Your prompt", text: $prompt, axis: .vertical)
-                    .textFieldStyle(.roundedBorder)
+            HStack(alignment: .top, spacing: 8) {
+                ZStack(alignment: .topLeading) {
+                    TextEditor(text: $prompt)
+                        .font(.system(size: 15))
+                        .padding(8)
+                        .frame(minHeight: 140)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.gray.opacity(0.08))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color.secondary.opacity(0.5), lineWidth: 1)
+                        )
+                        .cornerRadius(6)
+                    if prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Text("Your prompt")
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 14)
+                            .padding(.leading, 14)
+                    }
+                }
                 Button(isLoading ? "Asking…" : "Ask") {
                     Task { await ask() }
                 }.disabled(isLoading || prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)

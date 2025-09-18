@@ -17,7 +17,7 @@ struct MainSplitView: View {
             .padding()
             .frame(minWidth: 380, maxWidth: .infinity, maxHeight: .infinity)
 
-            DropZoneView(csdText: $csdText, status: $status)
+            DropZoneView(csdText: $csdText, status: $status, lilyOK: $lilyOK)
                 .padding()
                 .frame(minWidth: 480, maxWidth: .infinity, maxHeight: .infinity)
         }

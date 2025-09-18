@@ -1,9 +1,18 @@
 import SwiftUI
+#if canImport(AppKit)
+import AppKit
+#endif
 
 struct DropZoneView: View {
     @Binding var csdText: String
     @Binding var status: String
+    @Binding var lilyOK: Bool
     @State private var isTargeted = false
+    @State private var copiedNote: String?
+
+    private var lyPreview: String {
+        LilyPondExporter.makeLily(from: csdText, tempoBPM: 120)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -18,6 +27,28 @@ struct DropZoneView: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
                 .truncationMode(.tail)
+            if !lilyOK {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Label("Copy-Ready LilyPond (.ly) — LilyPond Not Installed", systemImage: "doc.on.doc")
+                            .font(.headline)
+                        Spacer()
+                        Button("Copy .ly") { copy(lyPreview) }
+                    }
+                    TextEditor(text: .constant(lyPreview))
+                        .font(.system(.body, design: .monospaced))
+                        .frame(maxWidth: .infinity, minHeight: 140)
+                        .disabled(true)
+                        .background(Color.gray.opacity(0.06))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color.secondary.opacity(0.5), lineWidth: 1)
+                        )
+                        .cornerRadius(6)
+                    if let copiedNote { Text(copiedNote).font(.footnote).foregroundStyle(.secondary) }
+                }
+                .padding(.vertical, 4)
+            }
             TextEditor(text: $csdText)
                 .font(.system(.body, design: .monospaced))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -69,6 +100,17 @@ struct DropZoneView: View {
         guard FileManager.default.fileExists(atPath: lyURL.path) else { status = "No composition.ly — export first"; return }
         let ok = LilyPondExporter.engrave(lyURL: lyURL)
         status = ok ? "Engraved PDF via lilypond" : "lilypond not available — used .ly only"
+    }
+
+    private func copy(_ text: String) {
+#if canImport(AppKit)
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(text, forType: .string)
+        copiedNote = "Copied .ly to clipboard."
+#else
+        copiedNote = "Copy unsupported on this platform."
+#endif
     }
 }
 

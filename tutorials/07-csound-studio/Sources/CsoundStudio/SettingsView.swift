@@ -19,8 +19,16 @@ struct SettingsView: View {
                     TextField("Gateway URL", text: $settings.gatewayURL)
                         .disableAutocorrection(true)
                         .textFieldStyle(.roundedBorder)
+                        .controlSize(.large)
+                        .font(.system(size: 14))
+                        .padding(.vertical, 2)
+                        .frame(maxWidth: .infinity)
                     SecureField("Gateway Token (FOUNTAIN_AI_KEY)", text: $settings.apiToken)
                         .textFieldStyle(.roundedBorder)
+                        .controlSize(.large)
+                        .font(.system(size: 14))
+                        .padding(.vertical, 2)
+                        .frame(maxWidth: .infinity)
                     HStack(spacing: 12) {
                         Button(checking ? "Checking…" : "Check") { Task { await checkNow() } }
                             .disabled(checking)
@@ -54,6 +62,10 @@ struct SettingsView: View {
                 Section("Provider (OpenAI)") {
                     SecureField("OPENAI_API_KEY (used by local Gateway)", text: $settings.openAIKey)
                         .textFieldStyle(.roundedBorder)
+                        .controlSize(.large)
+                        .font(.system(size: 14))
+                        .padding(.vertical, 2)
+                        .frame(maxWidth: .infinity)
                     Text("Note: The Gateway reads this key from its own process environment. Update your shell and restart the Gateway to apply.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
