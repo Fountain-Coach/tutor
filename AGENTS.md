@@ -1,45 +1,60 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
-- Root contains `README.md`, `LICENSE`, and reference PDFs. All tutorial content lives in `tutorials/`.
-- Tutorials use numbered, kebab-case folders: `tutorials/NN-title/` (e.g., `06-screenplay-editor-capstone/`).
-- Each tutorial includes a `README.md` plus sample code and assets (e.g., `MainScene.teatro`, `NoteStore.swift`, `CuePlayer.ts`, MIDI files).
-- Deep knowledge articles live in `docs/` (e.g., `docs/dependency-management-deep-dive.md`). Link them from READMEs when relevant.
+## Current Layout
+- `README.md` hosts the Tutor Path overview at the repository root.
+- `docs/tutor/README.md` keeps the breadcrumb back to the root guide while the module chapters stay in `docs/tutor/modules/`.
+- Shared snippets for the module content live in `docs/tutor/_includes/` (`env.md`, `testing-checklists.md`, `repo-links.md`).
+- Keep this arrangement stable: add new reference material under `docs/`, and reserve the root for high-signal entry points like the Tutor Path, this guide, and licensing files.
+
+## Tutor Path Modules
+- **Module 01 — Spec Literacy & Health**: enumerate documented services, query `/v1/health` and `/v1/capabilities`, and surface missing capabilities with guidance.
+- **Module 02 — Corpus Bootstrap**: create corpora through the bootstrap API, seed baselines, and verify persistence through Awareness.
+- **Module 03 — Awareness: Baselines, Drift, Reflections**: manage baseline versions, visualize drift/patterns, and maintain reflections timelines.
+- **Module 04 — Planner + LLM Gateway Loop**: collect ordered planner steps then execute them via Function Caller with corpus context.
+- **Module 05 — Tools Factory → Function Caller**: register OpenAPI operations as tools, invoke them, and persist invocation results in the corpus.
+- **Module 06 — Teatro GUI: Spec-Only Integration**: render a GUI that only consumes documented HTTP APIs; no internal shortcuts.
+- **Module 07 — Observability & Guards**: expose gateway limits, destructive-operation guards, and related metrics in the UI.
+- **Module 08 — Reasoning Streams (Optional, MIDI2)**: stream planner/awareness events (SSE-over-MIDI) with transport controls for transparency.
+
+### Module Maintenance Guidelines
+- Preserve the shared outline in each module: **Outcome**, **What you’ll ship**, **Specs to read**, **Behavioral acceptance**, **Test plan**, **Runbook**, **Hand-off to Codex**.
+- When new capabilities arrive, update the relevant module(s) and cross-link any supporting deep dives in `docs/`.
+- Keep spec references current; remove deprecated endpoints and replace them with the documented equivalents.
+- Acceptance checklists use `- [ ]` syntax—update them when altering scope and mirror those changes in tests.
+
+## Documentation Workflow
+- Update the root `README.md` whenever the Tutor Path sequence or shared resources change so contributors onboard via a single canonical entry point.
+- Link into module chapters with relative paths (e.g. `docs/tutor/modules/01-spec-literacy-and-health.md`). Avoid hard-coded URLs; everything should work when browsing locally.
+- When editing module content, reuse snippets from `_includes/` instead of duplicating environment or testing instructions.
+- If you relocate docs, leave breadcrumbs (as in `docs/tutor/README.md`) so existing links degrade gracefully.
+
+## Tutorial Scaffolding (When Present)
+- Tutorials belong in `tutorials/` using numbered, kebab-case folders: `tutorials/NN-title/` (e.g. `tutorials/06-screenplay-editor-capstone/`).
+- Each tutorial should provide a `README.md`, runnable sample code, assets (`MainScene.teatro`, `NoteStore.swift`, `CuePlayer.ts`, MIDI files), and a test target.
+- Deep-dive articles or cross-cutting guides continue to live in `docs/` alongside the Tutor Path material.
 
 ## Build, Test, and Development Commands
-- Per tutorial folder:
-  - `./setup.sh` — scaffold a SwiftPM app (AI UI by default).
-  - `./setup.sh --upstream` — use Swift-based upstream scaffolder and generate a local package linked to FountainAI.
-  - `./setup.sh --profile <name>` — include FountainAI client libraries by profile (`basic`, `ai`, `persist`, `midi2`, `capstone`, `full-client`).
-  - Install Tutor CLI once: `Scripts/install-tutor.sh` (puts `tutor` in `~/.local/bin`).
-  - From a tutorial folder, use the CLI (preferred):
-    - `tutor build`
-    - `tutor run`
-    - `tutor test`
-- CI: GitHub Actions workflow (`.github/workflows/swift-ci.yml`) runs setup, build, and tests for all tutorials on PRs.
+- From inside a tutorial folder:
+  - `./setup.sh` scaffolds the default SwiftPM app.
+  - `./setup.sh --upstream` pulls the upstream Swift scaffolder wired to FountainAI.
+  - `./setup.sh --profile <name>` adds FountainAI client libraries (`basic`, `ai`, `persist`, `midi2`, `capstone`, `full-client`).
+  - After scaffolding, prefer the Tutor CLI (`tutor build`, `tutor run`, `tutor test`). Install it once via `Scripts/install-tutor.sh`.
+- CI runs `.github/workflows/swift-ci.yml`, which exercises setup, build, and tests for every tutorial.
 
 ## Coding Style & Naming Conventions
-- Swift: 4-space indent; types `PascalCase`, members `lowerCamelCase`; one primary type per file; suffixes like `Store`, `Client` (e.g., `NoteStore.swift`, `AIClient.swift`).
-- TypeScript: 2-space indent; ES module imports; classes `PascalCase` (e.g., `CuePlayer.ts`).
-- Teatro DSL: scene files `PascalCase` (e.g., `MainScene.teatro`); event names `kebab-case` (`save-note`, `play-cue`, `ask-ai`).
-- Markdown: headings in Title Case; relative links; short paragraphs; fenced code blocks with language hints.
+- Swift: 4-space indent, types in `PascalCase`, members `lowerCamelCase`, one primary type per file, suffixes like `Store`, `Client`.
+- TypeScript: 2-space indent, ES module imports, classes in `PascalCase`.
+- Teatro DSL: scene files `PascalCase` (`MainScene.teatro`); events `kebab-case` (`save-note`).
+- Markdown: Title Case headings, relative links, short paragraphs, fenced code blocks with language hints.
 
 ## Testing Guidelines
-- Tests are mandatory. Every tutorial scaffold includes a SwiftPM test target and a minimal unit test.
-- Swift (SwiftPM):
-  - Run tests with `swift test` in each tutorial folder.
-  - Pattern: put pure logic in small functions (e.g., `greet()` in `Greeter.swift`) and test them via `@testable import <TargetName>`.
-  - Add new tests under `Tests/<TargetName>Tests/` and keep them fast and deterministic.
-- TypeScript examples:
-  - If adding TS code, include lightweight tests (e.g., Vitest/Jest) and run them via `npm test` in that tutorial subfolder.
-- Coverage: aim for 80%+ of added logic. Prefer testing behavior over implementation details.
-- Self-correction loop: write a failing test for each bug/feature, implement, then re-run `swift test` until green.
+- Every tutorial must ship with tests. Keep logic small and testable via SwiftPM test targets or lightweight TS test runners (Vitest/Jest).
+- Use behavior-driven assertions; aim for >80% coverage of any new logic.
+- Follow the self-correction loop: write a failing test, implement the fix/feature, rerun `swift test` (or `npm test`) until green.
 
-## Commit & Pull Request Guidelines
-- Use Conventional Commits (seen in history): `docs:`, `feat:`, `fix:`, `chore:`.
-- PRs should include: purpose, key changes, affected tutorial paths, linked issues, and small before/after snippets or screenshots where UI is relevant.
-- Branch naming: `codex/<topic>` or `copilot/<topic>` is preferred for tutorial edits.
-
-## Security & Configuration Tips
-- Do not commit secrets or keys. Use placeholders (e.g., `YOUR_API_KEY`) and optional `.env.example` in tutorial folders when needed.
-- Keep binaries large files (PDF, media) unchanged unless explicitly updating a tutorial asset.
+## Contribution Checklist
+- Conventional Commits (`docs:`, `feat:`, `fix:`, `chore:`) keep history readable.
+- PRs should document purpose, key changes, affected tutorial paths, linked issues, and include before/after snippets or screenshots where UI is relevant.
+- Prefer branches named `codex/<topic>` or `copilot/<topic>` for tutorial updates.
+- Never commit secrets; use placeholders such as `YOUR_API_KEY` and provide `.env.example` files when configuration is required.
+- Leave large binaries untouched unless an asset update is explicitly requested.
