@@ -9,40 +9,45 @@ struct MainSplitView: View {
     @State private var lilyOK: Bool = false
 
     var body: some View {
-        GeometryReader { geo in
-            HSplitView {
-                ChatView(onInsert: { text in
-                    csdText = text
-                    status = "Inserted .csd from chat."
-                })
-                .frame(minWidth: geo.size.width * 0.45)
+        HSplitView {
+            ChatView(onInsert: { text in
+                csdText = text
+                status = "Inserted .csd from chat."
+            })
+            .padding()
+            .frame(minWidth: 380, maxWidth: .infinity, maxHeight: .infinity)
 
-                DropZoneView(csdText: $csdText, status: $status)
-                    .frame(minWidth: geo.size.width * 0.55)
-            }
-            .toolbar {
+            DropZoneView(csdText: $csdText, status: $status)
+                .padding()
+                .frame(minWidth: 480, maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .toolbar {
                 ToolbarItem(placement: .automatic) {
                     Button("Settings") { showSettings = true }
                 }
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView(gatewayOK: $gatewayOK, lilyOK: $lilyOK)
+                .environmentObject(settings)
+                .frame(minWidth: 560, minHeight: 420)
+        }
+        .safeAreaInset(edge: .bottom) {
+            HStack(spacing: 16) {
+                Label(gatewayOK ? "Gateway: OK" : "Gateway: Unavailable", systemImage: gatewayOK ? "checkmark.seal" : "exclamationmark.triangle")
+                    .foregroundStyle(gatewayOK ? .green : .orange)
+                Label(lilyOK ? "LilyPond: Installed" : "LilyPond: Missing", systemImage: lilyOK ? "music.note" : "xmark.octagon")
+                    .foregroundStyle(lilyOK ? .green : .red)
+                Spacer()
+                Text(status)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
             }
-            .sheet(isPresented: $showSettings) {
-                SettingsView(gatewayOK: $gatewayOK, lilyOK: $lilyOK)
-                    .environmentObject(settings)
-                    .frame(minWidth: 520, minHeight: 380)
-            }
-            .safeAreaInset(edge: .bottom) {
-                HStack(spacing: 16) {
-                    Label(gatewayOK ? "Gateway: OK" : "Gateway: Unavailable", systemImage: gatewayOK ? "checkmark.seal" : "exclamationmark.triangle")
-                        .foregroundStyle(gatewayOK ? .green : .orange)
-                    Label(lilyOK ? "LilyPond: Installed" : "LilyPond: Missing", systemImage: lilyOK ? "music.note" : "xmark.octagon")
-                        .foregroundStyle(lilyOK ? .green : .red)
-                    Spacer()
-                    Text(status).font(.footnote).foregroundStyle(.secondary)
-                }
-                .padding(8)
-                .background(.thinMaterial)
-                .onAppear { Task { await refreshStatus() } }
-            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(.thinMaterial)
+            .onAppear { Task { await refreshStatus() } }
         }
     }
 

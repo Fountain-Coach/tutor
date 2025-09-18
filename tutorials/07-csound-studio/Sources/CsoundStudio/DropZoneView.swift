@@ -13,7 +13,11 @@ struct DropZoneView: View {
                 Button("Export Score (.ly)") { exportLily() }.disabled(csdText.isEmpty)
                 Button("Engrave PDF") { engravePDF() }.disabled(csdText.isEmpty)
             }
-            Text(status).font(.footnote).foregroundStyle(.secondary)
+            Text(status)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+                .truncationMode(.tail)
             TextEditor(text: $csdText)
                 .font(.system(.body, design: .monospaced))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -21,11 +25,12 @@ struct DropZoneView: View {
                     RoundedRectangle(cornerRadius: 6)
                         .stroke(isTargeted ? Color.accentColor : Color.secondary, style: StrokeStyle(lineWidth: 1, dash: [4]))
                 )
+                .padding(.top, 4)
                 .onDrop(of: [UTType.fileURL.identifier], isTargeted: $isTargeted) { providers in
                     handleDrop(providers: providers)
                 }
         }
-        .padding()
+        .padding(8)
     }
 
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
