@@ -7,6 +7,7 @@ struct ChatMessageItem: Identifiable {
 }
 
 struct ChatView: View {
+    @EnvironmentObject var settings: AppSettings
     @State private var prompt: String = "Return a complete Csound .csd with a gentle envelope and a 3-note motif at 120 BPM. Output only .csd."
     @State private var isLoading = false
     @State private var error: String?
@@ -49,13 +50,12 @@ struct ChatView: View {
         isLoading = true; defer { isLoading = false }
         messages.append(.init(role: "user", content: prompt))
         do {
-            let base = ProcessInfo.processInfo.environment["LLM_GATEWAY_URL"] ?? "http://127.0.0.1:8080/api/v1"
+            let base = settings.gatewayURL
             guard let url = URL(string: base + "/generate") else { error = "Invalid LLM_GATEWAY_URL"; return }
             var req = URLRequest(url: url)
             req.httpMethod = "POST"
-            if let token = ProcessInfo.processInfo.environment["FOUNTAIN_AI_KEY"], !token.isEmpty {
-                req.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            }
+            let token = settings.apiToken.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !token.isEmpty { req.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
             req.addValue("application/json", forHTTPHeaderField: "Content-Type")
             let body: [String: Any] = [
                 "model": "fountain-medium",
