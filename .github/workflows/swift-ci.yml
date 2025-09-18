@@ -53,6 +53,7 @@ jobs:
         run: tools/tutor-cli/.build/release/tutor test --dir tutorials/${{ matrix.tutorial }}
 
       - name: Generate Coverage (SwiftPM)
+        if: matrix.tutorial == '07-csound-studio'
         working-directory: tutorials/${{ matrix.tutorial }}
         run: |
           set -euo pipefail
@@ -69,7 +70,7 @@ jobs:
           fi
 
       - name: Upload Coverage Artifact
-        if: always()
+        if: matrix.tutorial == '07-csound-studio'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.tutorial }}
@@ -77,43 +78,6 @@ jobs:
             tutorials/${{ matrix.tutorial }}/coverage.txt
             tutorials/${{ matrix.tutorial }}/coverage.lcov
 
-      - name: Upload to Codecov
-        if: always()
-        uses: codecov/codecov-action@v4
-        with:
-          files: tutorials/${{ matrix.tutorial }}/coverage.lcov
-          flags: ${{ matrix.tutorial }}
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
-          verbose: true
+      # Removed per-matrix Codecov upload to avoid multiple concurrent uploads.
 
-  merge-coverage:
-    needs: build-and-test
-    runs-on: macos-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download Coverage Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: coverage-*
-          merge-multiple: true
-          path: coverage
-
-      - name: Merge LCOV
-        run: |
-          set -euo pipefail
-          mkdir -p coverage
-          ls -la coverage || true
-          # Concatenate all lcov files into one; lcov supports simple concatenation
-          find coverage -name '*.lcov' -maxdepth 2 -print -exec cat {} \; > coverage/merged.lcov || true
-          echo "Merged LCOV size:" && wc -c coverage/merged.lcov || true
-
-      - name: Upload Merged Coverage to Codecov (project-level)
-        uses: codecov/codecov-action@v4
-        with:
-          files: coverage/merged.lcov
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
-          verbose: true
+  # Merged upload disabled; single coverage upload (07-csound-studio) keeps badge stable and fast.
