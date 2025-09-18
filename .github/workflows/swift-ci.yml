@@ -52,31 +52,7 @@ jobs:
       - name: Test
         run: tools/tutor-cli/.build/release/tutor test --dir tutorials/${{ matrix.tutorial }}
 
-      - name: Generate Coverage (SwiftPM)
-        if: matrix.tutorial == '07-csound-studio'
-        working-directory: tutorials/${{ matrix.tutorial }}
-        run: |
-          set -euo pipefail
-          swift test --enable-code-coverage
-          echo "Listing build tree for coverage discovery:" && find .build -maxdepth 4 -type f | sed -n '1,200p'
-          BIN=$(ls .build/*/debug/*PackageTests.xctest/Contents/MacOS/* 2>/dev/null | head -n1 || true)
-          PROFDATA=$(ls .build/*/debug/codecov/*.profdata 2>/dev/null | head -n1 || true)
-          if [[ -n "${BIN:-}" && -n "${PROFDATA:-}" ]]; then
-            xcrun llvm-cov report "$BIN" -instr-profile "$PROFDATA" > coverage.txt || true
-            xcrun llvm-cov export -format=lcov "$BIN" -instr-profile "$PROFDATA" > coverage.lcov || true
-            echo "Generated coverage from BIN=$BIN PROFDATA=$PROFDATA"
-          else
-            echo "No coverage artifacts found (skipping export)" > coverage.txt
-          fi
-
-      - name: Upload Coverage Artifact
-        if: matrix.tutorial == '07-csound-studio'
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-${{ matrix.tutorial }}
-          path: |
-            tutorials/${{ matrix.tutorial }}/coverage.txt
-            tutorials/${{ matrix.tutorial }}/coverage.lcov
+      # Coverage generation and uploads removed per request.
 
       # Removed per-matrix Codecov upload to avoid multiple concurrent uploads.
 
