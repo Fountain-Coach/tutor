@@ -1,6 +1,8 @@
 # Tutor Path (OpenAPI-First, Corpus-Aware)
 
-> Drop-in docs pack for the **Tutor** repository. This creates a coherent, spec-driven path that matches the current FountainAI scope: **OpenAPI-first**, **corpus via FountainStore**, **GUI (Teatro) only via documented APIs**, and **capability-aware** services.
+> Drop-in docs pack for the **Tutor** repository. The path now centers on delivering a Swift curses dashboard powered by `swiftcurseskit`, with specs flowing straight into terminal panels and forms.
+
+> Each stage treats the documented APIs as the single source of truth while the curses UI surfaces service health, corpus insight, and planner activity without private backdoors.
 
 ---
 
@@ -30,16 +32,16 @@ docs/
 
 > **Notes**
 > - Keep all module docs within `docs/tutor/modules/` and reference common snippets (env, links, testing) from `_includes/`.
-> - This pack assumes each service exposes `/v1/health`, `/v1/capabilities`, and documented OpenAPI schemas under an `openapi/` directory across repos.
+> - Expect `swiftcurseskit` views—tables, forms, event loops—to hydrate from `/v1/health`, `/v1/capabilities`, and OpenAPI definitions under `openapi/` directories across repos.
 
 ---
 
 ## Global Principles
 
-1. **OpenAPI before code** — start each module by curating/reading the spec.
-2. **Corpus everywhere** — tests run against a seeded FountainStore corpus.
-3. **GUI via APIs** — Teatro exercises only spec’d endpoints; no internal calls.
-4. **Capabilities-aware** — surface missing features via `/v1/capabilities`.
+1. **Specs Drive the Dashboard** — curate the OpenAPI schema before wiring `swiftcurseskit` tables or panels.
+2. **Corpus Widgets Everywhere** — hydrate curses forms from a seeded FountainStore corpus to keep data entry consistent.
+3. **HTTP-Powered Curses UI** — route every `swiftcurseskit` surface (service tables, planner loops) through documented endpoints only.
+4. **Capability Panels** — render `/v1/capabilities` deltas directly inside the dashboard so missing features stay visible.
 
 ## Profiles (Conceptual)
 
@@ -50,14 +52,14 @@ docs/
 
 ## Modules
 
-1. [**Spec Literacy & Health**](docs/tutor/modules/01-spec-literacy-and-health.md) — list services, check `/v1/health`, enumerate `/v1/capabilities`.
-2. [**Corpus Bootstrap**](docs/tutor/modules/02-corpus-bootstrap.md) — create a corpus, seed baselines/roles, verify state.
-3. [**Awareness: Baselines, Drift, Reflections**](docs/tutor/modules/03-awareness-baselines-drift-reflections.md) — add baselines, inspect drift & narrative patterns.
-4. [**Planner + LLM Gateway Loop**](docs/tutor/modules/04-planner-and-llm-gateway-loop.md) — plan → execute via Function Caller with corpus context.
-5. [**Tools Factory → Function Caller**](docs/tutor/modules/05-tools-factory-to-function-caller.md) — register/invoke tools from OpenAPI operations.
-6. [**Teatro GUI: Spec-Only Integration**](docs/tutor/modules/06-teatro-gui-spec-only-integration.md) — browse corpora, baselines, planner runs via APIs.
-7. [**Observability & Guards**](docs/tutor/modules/07-observability-and-guards.md) — budget, rate-limit, destructive-ops guard; expose metrics.
-8. [**Reasoning Streams (Optional, MIDI2)**](docs/tutor/modules/08-reasoning-streams-midi2-optional.md) — live transparent streams; transport controls.
+1. [**Spec Literacy & Health**](docs/tutor/modules/01-spec-literacy-and-health.md) — list services, check `/v1/health`, and project them into `swiftcurseskit` service tables.
+2. [**Corpus Bootstrap**](docs/tutor/modules/02-corpus-bootstrap.md) — create a corpus, seed baselines/roles, and back the curses data-entry forms with FountainStore.
+3. [**Awareness: Baselines, Drift, Reflections**](docs/tutor/modules/03-awareness-baselines-drift-reflections.md) — add baselines, inspect drift patterns, and wire dashboards to awareness feeds.
+4. [**Planner + LLM Gateway Loop**](docs/tutor/modules/04-planner-and-llm-gateway-loop.md) — surface ordered planner steps in `swiftcurseskit` loops before triggering Function Caller execution.
+5. [**Tools Factory → Function Caller**](docs/tutor/modules/05-tools-factory-to-function-caller.md) — register/invoke tools from OpenAPI operations and expose invocation logs in curses panels.
+6. [**Teatro GUI: Spec-Only Integration**](docs/tutor/modules/06-teatro-gui-spec-only-integration.md) — translate lessons into a spec-bound curses shell while keeping Teatro parity.
+7. [**Observability & Guards**](docs/tutor/modules/07-observability-and-guards.md) — chart budgets, rate limits, and guardrails through `swiftcurseskit` gauges.
+8. [**Reasoning Streams (Optional, MIDI2)**](docs/tutor/modules/08-reasoning-streams-midi2-optional.md) — stream planner and awareness events into live terminal transports.
 
 ## How To Use This Path
 
