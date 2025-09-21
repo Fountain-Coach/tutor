@@ -1,22 +1,28 @@
 # Module 06 — Teatro GUI: Spec-Only Integration
 
-**Outcome**: Wire Teatro to browse corpora, baselines/drift, and planner runs solely via APIs.
+**Outcome**: Deliver spec-derived browsing panes in `swiftcurseskit` that surface corpora, baselines/drift, and planner runs without relying on GUI-only shortcuts.
 
 ## What you’ll ship
-A minimal, deterministic GUI that renders server responses; no internal shortcuts.
+A curses workspace built with `swiftcurseskit` that renders corpora, baseline lineage, and planner execution history straight from the documented APIs.
 
 ## Specs to read
 - The same specs from Modules 02–05 (persist, awareness, planner, tools, function caller)
 
 ## Behavioral acceptance
-- [ ] All state derived from HTTP responses
-- [ ] Missing capability paths rendered with user guidance
+- [ ] Each pane (corpora, baselines, planner runs) loads exclusively from documented HTTP responses
+- [ ] Keyboard navigation transitions between panes and datasets without stale state or hidden shortcuts
+- [ ] Rendered records stay read-only and match spec-defined schemas
+- [ ] Missing capability paths echo the documented guidance inside the curses views
 
 ## Test plan
-- Snapshot test the GUI against canned API fixtures
+- Simulate navigation keystrokes to move between corpora, baseline timelines, and planner runs
+- Assert rendered cells map 1:1 with spec payloads and remain read-only
+- Verify only documented endpoints are invoked when refreshing panes
+- Snapshot the curses output against canned API fixtures to prevent regression drift
 
 ## Runbook
-- Set `TEATRO_BASE_URL` only if GUI is served separately; otherwise integrate locally
+- Wire FountainAI client responses directly into `swiftcurseskit` list/detail components for each pane
+- Ensure keyboard commands stay in sync with HTTP refresh loops instead of GUI affordances
 
 ## Hand-off to Codex
-> Render-only GUI that binds to the existing APIs. No direct file or DB access.
+> Surface the HTTP responses from the documented APIs in the `swiftcurseskit` panes and keep capability guidance visible inside the terminal experience. No direct file or DB access.
